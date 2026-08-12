@@ -1,0 +1,19 @@
+{
+    "name": "LastBeacon.Runtime",
+    "rootNamespace": "LastBeacon",
+    "references": [
+        "Unity.InputSystem",
+        "Unity.Netcode.Runtime",
+        "Unity.Cinemachine",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
