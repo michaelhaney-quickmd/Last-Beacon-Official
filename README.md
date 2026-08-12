@@ -4,7 +4,10 @@
 
 - **Engine:** Unity 6 (6000.5.4f1), URP
 - **Target:** PC / Steam
-- **Status:** Pre-production — design docs only, Unity project not yet created (Phase 0)
+- **Status:** Phase 0 complete — project set up, no gameplay code yet. Next: Phase 1, compound blockout.
+- **Co-op:** Netcode for GameObjects + Relay/Lobby, server-authoritative. Voice via Vivox.
+
+Open the project at the repository root with Unity 6000.5.4f1. The current test scene is `Assets/_Project/Scenes/Sandbox.unity`.
 
 ## Documents
 
@@ -31,4 +34,4 @@ git config merge.unityyamlmerge.cmd '"/Volumes/Unity/UnityEditors/6000.5.4f1/Uni
 
 ## Next step
 
-Phase 0 in the workflow doc: create the Unity 6 URP project at the repo root, add `CLAUDE.md`, set up the `Assets/_Project/` folder structure, install Input System / ProBuilder / Cinemachine / TextMeshPro.
+Phase 1 in the workflow doc: ProBuilder blockout of the vertical-slice compound — lighthouse exterior with three floor volumes, generator shed, workshop, Keeper's House exterior, main gate, short dock path. No sea cave.
