@@ -26,7 +26,7 @@ git lfs install
 Unity scene/prefab merges use UnityYAMLMerge (`.gitattributes`). Configure it once per machine:
 
 ```bash
-git config merge.unityyamlmerge.cmd '"/Volumes/Unity/UnityEditors/6000.5.4f1/Unity.app/Contents/Tools/UnityYAMLMerge" merge -p "$BASE" "$REMOTE" "$LOCAL" "$MERGED"'
+git config merge.unityyamlmerge.cmd '"/Volumes/Unity/UnityEditors/6000.5.4f1/Unity.app/Contents/Helpers/UnityYAMLMerge" merge -p "$BASE" "$REMOTE" "$LOCAL" "$MERGED"'
 ```
 
 ## Next step
