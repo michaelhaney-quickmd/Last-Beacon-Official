@@ -2,7 +2,9 @@
     "name": "LastBeacon.Editor",
     "rootNamespace": "LastBeacon.Editor",
     "references": [
-        "LastBeacon.Runtime"
+        "LastBeacon.Runtime",
+        "Unity.ProBuilder",
+        "Unity.ProBuilder.Editor"
     ],
     "includePlatforms": [
         "Editor"
