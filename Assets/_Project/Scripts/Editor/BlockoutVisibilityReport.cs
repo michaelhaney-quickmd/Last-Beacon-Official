@@ -34,9 +34,10 @@ namespace LastBeacon.Editor
 
             var tiers = new (string Name, float XMin, float XMax, float ZMin, float ZMax, float Y)[]
             {
-                ("dock", -2f, 2f, -54f, -44f, 0.4f),
-                ("landing", -7f, 7f, -35f, -21f, 5f),
-                ("terrace", -10f, 10f, -19f, 1f, 11f),
+                ("dock", -6f, 6f, -47f, -35f, 0.2f),
+                ("lower-left", -18f, -10f, -32f, -24f, 4f),
+                ("overlook", 8f, 18f, -19.5f, -12.5f, 9f),
+                ("ascent landing", -2f, 5f, -10f, -7f, 11.5f),
                 ("compound", -26f, 26f, 3f, 31f, 17f),
                 ("knoll", -11f, 11f, 33f, 43f, 21f)
             };

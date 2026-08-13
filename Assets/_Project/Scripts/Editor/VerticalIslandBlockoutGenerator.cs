@@ -11,29 +11,42 @@ using UnityEngine.Rendering;
 namespace LastBeacon.Editor
 {
     /// <summary>
-    /// Phase 1 — vertical compact lighthouse island blockout.
+    /// Phase 1 — compact vertical lighthouse island blockout.
     ///
-    /// Replaces the earlier flat-compound blockout. The island is a compact tiered
-    /// rock formation: horizontally tight, vertically dramatic, with the lighthouse
-    /// dominating from every working surface.
+    /// The dock-to-compound approach is a serpentine that wraps the side of the
+    /// cliff mass: LEFT, then RIGHT through an overlook shelf, then LEFT again into
+    /// the compound. The lighthouse holds still on the centreline throughout, so the
+    /// destination never moves while the foreground swings.
+    ///
+    /// APPROVED ROUTE. Every waypoint is on the primary path — the overlook is not
+    /// a detour: the traverse terminates at its south-west corner and the final
+    /// ascent begins at its north-west corner.
+    ///
+    ///    0  dock, jetty end        (   0, 0.4, -48 )
+    ///    1  shore apron            (   0, 0.0, -41 )
+    ///    2  ramp base              (  -4, 0.0, -40 )   route breaks LEFT
+    ///    3  lower-left ascent top  ( -14, 4.0, -28 )   14.4 deg
+    ///    4  traverse midpoint      (   0, 6.5, -22 )   bends RIGHT,  9.3 deg
+    ///    5  overlook entry  SW     (  10, 9.0, -19 )   13.5 deg
+    ///    6  fence lookout          (15.5, 9.0, -17.5)  look back to dock
+    ///    7  overlook exit   NW     (10.5, 9.0, -12.5)  turn LEFT
+    ///    8  ascent A top           (   4,11.5, -9  )   18.7 deg
+    ///    9  landing                (   0,11.5, -7.5)   flat
+    ///   10  broad stairs top       (  -5,16.0, -1  )   28.7 deg
+    ///   11  compound entrance      (  -6,17.0,  2  )   17.6 deg
+    ///   12  main yard centre       (   0,17.0, 17  )
+    ///       lighthouse base        (   0,21.0, 38  )   UNCHANGED
     ///
     /// NOTE ON THE GDD: Section 6 scrapped the previous multi-tier island. This
-    /// blockout reinstates elevation deliberately, at compact scale (80 x 62 m of
-    /// land, compound 55 m across, no switchbacks, no distant holdout zones).
-    /// Treat it as a revision of Section 6, not an oversight.
+    /// blockout reinstates elevation deliberately, at compact scale. Treat it as a
+    /// revision of Section 6, not an oversight.
     ///
-    ///   TIER 0  Dock            y  0   jetty z -56..-44, apron z -44..-36
-    ///   TIER 1  Lower Landing   y  5   x  -8..8    z -36..-14   16 x 22
-    ///   TIER 2  Gate Terrace    y 11   x -11..11   z -14..2     22 x 16
-    ///   TIER 3  Main Compound   y 17   x -27.5..27.5  z 2..32   55 x 30
-    ///   TIER 4  Lighthouse Base y 21   x -12..12   z 32..44     24 x 12
+    /// Cliff massing is broad faceted planes and battered faces, not stacked
+    /// rectangular terrace walls. The west flank is deliberately shallow so the
+    /// lighthouse stays visible from the lower-left leg of the climb — do not
+    /// steepen it without re-running the visibility report.
     ///
-    /// The lower tiers are notches cut into the south face of one rock mass rather
-    /// than stacked platforms, so the mass never overhangs itself. Each cliff band
-    /// is split around its notch, leaving the shelf flanked by rock walls.
-    ///
-    /// Everything is a separate editable ProBuilder mesh — terraces, cliff bands,
-    /// stairs, ramps, retaining walls, buildings and dock are never merged.
+    /// Everything is a separate editable ProBuilder mesh.
     /// </summary>
     public static class VerticalIslandBlockoutGenerator
     {
@@ -44,30 +57,52 @@ namespace LastBeacon.Editor
 
         // --- Elevation bands -----------------------------------------------------
         public const float TierDock = 0f;
-        public const float TierLanding = 5f;
-        public const float TierGate = 11f;
+        public const float TierLowerAscent = 4f;
+        public const float TierOverlook = 9f;
+        public const float TierLanding = 11.5f;
         public const float TierCompound = 17f;
         public const float TierLighthouse = 21f;
 
         // --- Island extents ------------------------------------------------------
-        const float IslandSouth = -36f;
         const float IslandNorth = 44f;
         const float IslandHalfWidth = 31f;
-
-        // --- Tier extents --------------------------------------------------------
-        const float LandingHalfWidth = 8f;
-        const float LandingNorth = -20f;
-        const float GateHalfWidth = 11f;
-        const float GateNorth = 2f;
-        const float CompoundHalfWidth = 27.5f;
+        const float CompoundSouth = 2f;
         const float CompoundNorth = 32f;
+        const float CompoundHalfWidth = 27.5f;
         const float KnollHalfWidth = 12f;
 
         const float GateOpening = 4.5f;
         public const float EyeHeight = 1.7f;
 
-        /// <summary>Lighthouse tower centre on the Tier 4 knoll.</summary>
+        /// <summary>Lighthouse tower centre. Unchanged, and must stay unchanged.</summary>
         public static readonly Vector2 LighthouseXZ = new Vector2(0f, 38f);
+
+        // --- Approved route waypoints -------------------------------------------
+        public static readonly Vector3 WpJettyEnd = new Vector3(0f, 0.4f, -48f);
+        public static readonly Vector3 WpShoreApron = new Vector3(0f, 0f, -41f);
+        public static readonly Vector3 WpRampBase = new Vector3(-4f, 0f, -40f);
+        public static readonly Vector3 WpLowerLeftTop = new Vector3(-14f, 4f, -28f);
+        public static readonly Vector3 WpTraverseMid = new Vector3(0f, 6.5f, -22f);
+        public static readonly Vector3 WpOverlookEntry = new Vector3(10f, 9f, -19f);
+        public static readonly Vector3 WpFenceLookout = new Vector3(15.5f, 9f, -17.5f);
+        public static readonly Vector3 WpOverlookExit = new Vector3(10.5f, 9f, -12.5f);
+        public static readonly Vector3 WpAscentATop = new Vector3(4f, 11.5f, -9f);
+        public static readonly Vector3 WpLanding = new Vector3(0f, 11.5f, -7.5f);
+        public static readonly Vector3 WpStairsTop = new Vector3(-5f, 16f, -1f);
+        public static readonly Vector3 WpCompoundEntrance = new Vector3(-6f, 17f, 2f);
+        public static readonly Vector3 WpYardCentre = new Vector3(0f, 17f, 17f);
+
+        /// <summary>The primary route, in order. Used for distance and timing.</summary>
+        public static Vector3[] Route => new[]
+        {
+            WpJettyEnd, WpShoreApron, WpRampBase, WpLowerLeftTop, WpTraverseMid,
+            WpOverlookEntry, WpFenceLookout, WpOverlookExit, WpAscentATop,
+            WpLanding, WpStairsTop, WpCompoundEntrance, WpYardCentre
+        };
+
+        // --- Overlook shelf, 11 x 8 ----------------------------------------------
+        const float OverlookXMin = 7.5f, OverlookXMax = 18.5f;
+        const float OverlookZMin = -20f, OverlookZMax = -12f;
 
         static Material _rock, _cliff, _concrete, _wood, _metal, _plank, _ground, _water;
 
@@ -81,26 +116,26 @@ namespace LastBeacon.Editor
 
             var root = new GameObject(RootName).transform;
             var cliffs = NewGroup("CliffMasses", root);
-            var terraces = NewGroup("Terraces", root);
-            var paths = NewGroup("PathsAndStairs", root);
-            var walls = NewGroup("RetainingWalls", root);
-            var dock = NewGroup("Tier0_Dock", root);
-            var landing = NewGroup("Tier1_LowerLanding", root);
-            var gate = NewGroup("Tier2_GateTerrace", root);
+            var sea = NewGroup("Sea", root);
+            var dock = NewGroup("Approach_00_Dock", root);
+            var lower = NewGroup("Approach_01_LowerLeftAscent", root);
+            var traverse = NewGroup("Approach_02_RisingTraverse", root);
+            var overlook = NewGroup("Approach_03_RightOverlook", root);
+            var ascent = NewGroup("Approach_04_FinalAscent", root);
             var compound = NewGroup("Tier3_MainCompound", root);
             var lighthouse = NewGroup("Tier4_Lighthouse", root);
             var markers = NewGroup("Markers", root);
             var cameras = NewGroup("ReviewCameras", root);
 
             BuildCliffMasses(cliffs);
-            BuildSea(terraces);
+            BuildSea(sea);
             BuildDock(dock);
-            BuildLowerLanding(landing);
-            BuildGateTerrace(gate);
+            BuildLowerLeftAscent(lower);
+            BuildRisingTraverse(traverse);
+            BuildRightOverlook(overlook);
+            BuildFinalAscent(ascent);
             BuildCompound(compound);
             BuildLighthouse(lighthouse);
-            BuildPaths(paths);
-            BuildRetainingWalls(walls);
             BuildMarkers(markers);
             BuildReviewCameras(cameras);
             BuildLighting(root);
@@ -116,10 +151,6 @@ namespace LastBeacon.Editor
             Debug.Log($"[Last Beacon] Vertical island blockout generated at {ScenePath}");
         }
 
-        /// <summary>
-        /// Removes any previously generated root so re-running cannot stack two
-        /// blockouts in one scene. Public so the validation tests can prove it.
-        /// </summary>
         public static int ClearExistingRoots()
         {
             var existing = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
@@ -137,44 +168,58 @@ namespace LastBeacon.Editor
 
         static void BuildCliffMasses(Transform parent)
         {
-            // Band A — sea-level plinth, full width. Its exposed top is Tier 1.
-            Slab("Cliff_BandA_Base", parent,
-                -IslandHalfWidth, IslandHalfWidth, IslandSouth, IslandNorth, 0f, TierLanding, _cliff);
+            // Solid cores. These are buried support; every exposed face gets a
+            // battered plane over it so nothing reads as a rectangular terrace wall.
+            Slab("Cliff_ShorePlinth", parent, -20f, 20f, -44f, -34f, -2f, TierDock, _rock);
+            Slab("Cliff_LowerWestBench", parent, -24f, -6f, -36f, -22f, -2f, TierLowerAscent, _cliff);
+            Slab("Cliff_OverlookBench", parent, 6f, 22f, -22f, -10f, -2f, TierOverlook, _cliff);
+            Slab("Cliff_LandingBench", parent, -4f, 7f, -11f, -6f, -2f, TierLanding, _cliff);
+            Slab("Cliff_CompoundPlateau", parent,
+                -IslandHalfWidth, IslandHalfWidth, CompoundSouth, CompoundNorth, -2f, TierCompound, _cliff);
 
-            // Band B — y 5..11, split around the Tier 1 notch (x -8..8, z -36..-14).
-            Slab("Cliff_BandB_West", parent,
-                -IslandHalfWidth, -LandingHalfWidth, IslandSouth, IslandNorth, TierLanding, TierGate, _cliff);
-            Slab("Cliff_BandB_East", parent,
-                LandingHalfWidth, IslandHalfWidth, IslandSouth, IslandNorth, TierLanding, TierGate, _cliff);
-            Slab("Cliff_BandB_Centre", parent,
-                -LandingHalfWidth, LandingHalfWidth, LandingNorth, IslandNorth, TierLanding, TierGate, _cliff);
+            // Battered faces — broad faceted planes. The route is cut into these.
+            // South face the traverse climbs: y0 at z -30 up to y9 at z -12.
+            BatteredFace("Cliff_SouthFace_Battered", parent,
+                new Vector3(0f, 0f, -30f), new Vector3(0f, TierOverlook, -12f), 44f, _cliff);
 
-            // Band C — y 11..17, split around the Tier 2 notch (x -11..11, z -14..2).
-            Slab("Cliff_BandC_West", parent,
-                -IslandHalfWidth, -GateHalfWidth, LandingNorth, IslandNorth, TierGate, TierCompound, _cliff);
-            Slab("Cliff_BandC_East", parent,
-                GateHalfWidth, IslandHalfWidth, LandingNorth, IslandNorth, TierGate, TierCompound, _cliff);
-            Slab("Cliff_BandC_Centre", parent,
-                -GateHalfWidth, GateHalfWidth, GateNorth, IslandNorth, TierGate, TierCompound, _cliff);
+            // West flank. Deliberately shallow: this is what keeps the lighthouse
+            // visible from the lower-left leg.
+            BatteredFace("Cliff_WestFlank_Battered", parent,
+                new Vector3(-19.5f, TierLowerAscent, -16f),
+                new Vector3(-19.5f, TierCompound, CompoundSouth), 23f, _cliff);
 
-            // Band D — the lighthouse knoll above the compound.
+            // East flank, above and behind the overlook.
+            BatteredFace("Cliff_EastFlank_Battered", parent,
+                new Vector3(22f, TierOverlook, -12f),
+                new Vector3(22f, TierCompound, CompoundSouth), 16f, _cliff);
+
+            // Centre face the final ascent is carved into.
+            BatteredFace("Cliff_CentreFace_Battered", parent,
+                new Vector3(0f, TierOverlook, -10f),
+                new Vector3(0f, TierCompound, CompoundSouth), 16f, _cliff);
+
+            // Cliff below the overlook. Steep on purpose — this is the drop the
+            // fence guards, and the wall you look down when you turn back.
+            BatteredFace("Cliff_OverlookFace_Battered", parent,
+                new Vector3(14f, 0f, -26f), new Vector3(14f, TierOverlook, -20f), 18f, _cliff);
+
+            // Broad chunky outcrops for silhouette. Few and large, never fragmented.
+            Cube("Rock_Outcrop_W", parent, new Vector3(-33f, 9f, 6f), new Vector3(10f, 18f, 16f), _rock);
+            Cube("Rock_Outcrop_E", parent, new Vector3(33f, 9f, 10f), new Vector3(12f, 20f, 22f), _rock);
+            Cube("Rock_Outcrop_N", parent, new Vector3(0f, 12f, 46f), new Vector3(34f, 24f, 10f), _rock);
+            Cube("Rock_Outcrop_SeaW", parent, new Vector3(-30f, 2f, -34f), new Vector3(12f, 12f, 14f), _rock);
+            Cube("Rock_Outcrop_SeaE", parent, new Vector3(28f, 1f, -32f), new Vector3(12f, 10f, 16f), _rock);
+            Cube("Rock_SeaStack_W", parent, new Vector3(-40f, 3f, -46f), new Vector3(8f, 14f, 8f), _rock);
+            Cube("Rock_SeaStack_E", parent, new Vector3(36f, 2f, -50f), new Vector3(7f, 12f, 7f), _rock);
+
+            // Lighthouse knoll — unchanged.
             Slab("Cliff_BandD_Knoll", parent,
                 -KnollHalfWidth, KnollHalfWidth, CompoundNorth, IslandNorth, TierCompound, TierLighthouse, _cliff);
 
-            // Broad faceted outcrops breaking the silhouette. Deliberately few and
-            // chunky — final art replaces these forms.
-            Cube("Rock_Outcrop_SW", parent, new Vector3(-26f, 6f, -30f), new Vector3(12f, 12f, 10f), _rock);
-            Cube("Rock_Outcrop_SE", parent, new Vector3(26f, 5f, -28f), new Vector3(12f, 10f, 12f), _rock);
-            Cube("Rock_Outcrop_W", parent, new Vector3(-33f, 9f, 6f), new Vector3(10f, 18f, 16f), _rock);
-            Cube("Rock_Outcrop_E", parent, new Vector3(33f, 9f, 10f), new Vector3(10f, 18f, 18f), _rock);
-            Cube("Rock_Outcrop_N", parent, new Vector3(0f, 12f, 46f), new Vector3(34f, 24f, 10f), _rock);
-            Cube("Rock_SeaStack_W", parent, new Vector3(-40f, 3f, -44f), new Vector3(8f, 14f, 8f), _rock);
-            Cube("Rock_SeaStack_E", parent, new Vector3(38f, 2f, -50f), new Vector3(7f, 12f, 7f), _rock);
-
-            // Compound rim, so Tier 3 reads as enclosed without walling off views.
-            Slab("Rock_Rim_West", parent, -IslandHalfWidth, -CompoundHalfWidth, GateNorth, CompoundNorth,
+            // Compound rim — unchanged.
+            Slab("Rock_Rim_West", parent, -IslandHalfWidth, -CompoundHalfWidth, CompoundSouth, CompoundNorth,
                 TierCompound, TierCompound + 2.6f, _rock);
-            Slab("Rock_Rim_East", parent, CompoundHalfWidth, IslandHalfWidth, GateNorth, CompoundNorth,
+            Slab("Rock_Rim_East", parent, CompoundHalfWidth, IslandHalfWidth, CompoundSouth, CompoundNorth,
                 TierCompound, TierCompound + 2.6f, _rock);
         }
 
@@ -187,103 +232,144 @@ namespace LastBeacon.Editor
             Finish(water, _water, addCollider: false);
         }
 
-        // ------------------------------------------------------------- tier 0 dock
+        // ------------------------------------------------------------ 00 — the dock
 
         static void BuildDock(Transform parent)
         {
-            // Shore apron at sea level, tucked against the island's south face.
-            Slab("Dock_Apron", parent, -12f, 12f, -44f, IslandSouth, -0.4f, TierDock, _ground);
+            Slab("Dock_Apron", parent, -14f, 10f, -41f, -34f, -0.4f, TierDock, _ground);
 
-            Cube("Dock_Deck", parent, new Vector3(0f, 0.2f, -50f), new Vector3(5f, 0.4f, 12f), _plank);
-            for (int i = 0; i < 6; i++)
+            Cube("Dock_Deck", parent, new Vector3(0f, 0.2f, -44.5f), new Vector3(5f, 0.4f, 7f), _plank);
+            for (int i = 0; i < 4; i++)
             {
-                float z = -45f - i * 2.2f;
+                float z = -42f - i * 2.1f;
                 Cube($"Dock_Piling_W_{i}", parent, new Vector3(-2.2f, -1.2f, z), new Vector3(0.4f, 3f, 0.4f), _wood);
                 Cube($"Dock_Piling_E_{i}", parent, new Vector3(2.2f, -1.2f, z), new Vector3(0.4f, 3f, 0.4f), _wood);
             }
 
-            // Boat arrival point and supply landing.
-            Cube("Dock_BoatCleat", parent, new Vector3(-2.6f, 0.6f, -52f), new Vector3(0.5f, 0.5f, 0.5f), _metal);
-            Cube("Dock_SupplyLanding", parent, new Vector3(3.6f, 0.3f, -46f), new Vector3(4f, 0.6f, 6f), _plank);
+            Cube("Dock_BoatCleat", parent, new Vector3(-2.6f, 0.6f, -47f), new Vector3(0.5f, 0.5f, 0.5f), _metal);
+            Cube("Dock_SupplyLanding", parent, new Vector3(4.2f, 0.3f, -39f), new Vector3(4f, 0.6f, 5f), _plank);
 
-            // Small crane placeholder.
-            Cube("Dock_Crane_Base", parent, new Vector3(4.6f, 0.9f, -44.5f), new Vector3(1.6f, 1.2f, 1.6f), _metal);
-            Cube("Dock_Crane_Mast", parent, new Vector3(4.6f, 3.6f, -44.5f), new Vector3(0.5f, 4.2f, 0.5f), _metal);
-            Cube("Dock_Crane_Jib", parent, new Vector3(2.6f, 5.5f, -46f), new Vector3(0.4f, 0.4f, 4.5f), _metal);
+            Cube("Dock_Crane_Base", parent, new Vector3(5.2f, 0.9f, -36.5f), new Vector3(1.6f, 1.2f, 1.6f), _metal);
+            Cube("Dock_Crane_Mast", parent, new Vector3(5.2f, 3.6f, -36.5f), new Vector3(0.5f, 4.2f, 0.5f), _metal);
+            Cube("Dock_Crane_Jib", parent, new Vector3(3.4f, 5.5f, -38f), new Vector3(0.4f, 0.4f, 4f), _metal);
 
-            // Crate storage.
-            Cube("Dock_Crate_A", parent, new Vector3(-3.4f, 0.9f, -45.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
-            Cube("Dock_Crate_B", parent, new Vector3(-3.4f, 0.9f, -47.4f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
-            Cube("Dock_Crate_C", parent, new Vector3(-3.4f, 2.3f, -45.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_A", parent, new Vector3(-4.2f, 0.7f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_B", parent, new Vector3(-4.2f, 0.7f, -39.4f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_C", parent, new Vector3(-4.2f, 2.1f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
         }
 
-        // ---------------------------------------------------- tier 1 lower landing
+        // -------------------------------------------------- 01 — lower-left ascent
 
-        static void BuildLowerLanding(Transform parent)
+        static void BuildLowerLeftAscent(Transform parent)
         {
-            // Defensible shelf: crates, low cover, room for four to pass.
-            Cube("Landing_Cover_West", parent, new Vector3(-6f, TierLanding + 0.6f, -26f),
-                new Vector3(3.5f, 1.2f, 0.6f), _concrete);
-            Cube("Landing_Cover_East", parent, new Vector3(6f, TierLanding + 0.6f, -26f),
-                new Vector3(3.5f, 1.2f, 0.6f), _concrete);
+            // Route breaks LEFT off the apron and climbs the west shoulder.
+            Ramp("Path_LowerLeftAscent", parent, WpRampBase, WpLowerLeftTop, 4.5f, _ground);
 
-            for (int i = 0; i < 3; i++)
-                Cube($"Landing_Crate_{i}", parent,
-                    new Vector3(5.4f, TierLanding + 0.7f, -30f + i * 1.6f),
-                    new Vector3(1.3f, 1.4f, 1.3f), _plank);
+            // Small pivot shelf where the route turns from left-heading to right.
+            Slab("Shelf_LowerLeftPivot", parent, -18f, -10f, -32f, -24f,
+                TierLowerAscent, TierLowerAscent + 0.04f, _ground);
 
-            // Short fence placeholders along the seaward lip.
-            for (int i = 0; i < 5; i++)
-                Cube($"Landing_FencePost_{i}", parent,
-                    new Vector3(-7f + i * 3.5f, TierLanding + 0.7f, -35.4f),
-                    new Vector3(0.25f, 1.4f, 0.25f), _wood);
+            Cube("LowerLeft_Kerb", parent, new Vector3(-14f, TierLowerAscent + 0.3f, -32.3f),
+                new Vector3(8f, 0.6f, 0.4f), _concrete);
         }
 
-        // ---------------------------------------------------- tier 2 gate terrace
+        // ---------------------------------------------------- 02 — rising traverse
 
-        static void BuildGateTerrace(Transform parent)
+        static void BuildRisingTraverse(Transform parent)
         {
-            // Gate sits at z -6, not -8: further north, the 3 m wall stops
-            // clipping the lighthouse sightline for players on the approach.
-            const float z = -4f;
-            const float h = 3f;
-            float sideRun = (GateHalfWidth * 2f - GateOpening) / 2f;
-            float sideCentre = GateOpening / 2f + sideRun / 2f;
+            // Two legs sweeping RIGHT across the south face, climbing y4 -> y9.
+            Ramp("Path_TraverseLeg1", parent, WpLowerLeftTop, WpTraverseMid, 4f, _ground);
+            Ramp("Path_TraverseLeg2", parent, WpTraverseMid, WpOverlookEntry, 4f, _ground);
 
-            Cube("GateWall_West", parent, new Vector3(-sideCentre, TierGate + h / 2f, z),
-                new Vector3(sideRun, h, 0.6f), _concrete);
-            Cube("GateWall_East", parent, new Vector3(sideCentre, TierGate + h / 2f, z),
-                new Vector3(sideRun, h, 0.6f), _concrete);
-            Cube("GatePost_West", parent, new Vector3(-GateOpening / 2f - 0.4f, TierGate + 2f, z),
-                new Vector3(0.8f, 4f, 1f), _concrete);
-            Cube("GatePost_East", parent, new Vector3(GateOpening / 2f + 0.4f, TierGate + 2f, z),
-                new Vector3(0.8f, 4f, 1f), _concrete);
-            Cube("GateLintel", parent, new Vector3(0f, TierGate + 4.2f, z),
-                new Vector3(GateOpening + 1.6f, 0.4f, 0.8f), _metal);
-            Cube("GateLeaf", parent, new Vector3(0f, TierGate + 1.3f, z),
-                new Vector3(GateOpening - 0.2f, 2.6f, 0.2f), _metal);
+            // Retaining kerb on the seaward side only, where it is genuinely useful.
+            Cube("Traverse_Kerb_A", parent, new Vector3(-7f, 5.6f, -26.6f), new Vector3(12f, 0.5f, 0.4f), _concrete);
+            Cube("Traverse_Kerb_B", parent, new Vector3(5f, 8.1f, -21.6f), new Vector3(10f, 0.5f, 0.4f), _concrete);
+        }
 
-            // Electric fence run flanking the gate (GDD Section 21).
+        // ----------------------------------------------------- 03 — right overlook
+
+        static void BuildRightOverlook(Transform parent)
+        {
+            // 11 x 8 shelf. A widened cliff path with a fence, not an arena.
+            Slab("Overlook_Deck", parent, OverlookXMin, OverlookXMax, OverlookZMin, OverlookZMax,
+                TierOverlook, TierOverlook + 0.04f, _ground);
+
+            // Short fence on the exposed south and east lips — the drop to the dock.
+            for (int i = 0; i < 6; i++)
+            {
+                float x = OverlookXMin + 0.75f + i * 2f;
+                Cube($"Overlook_FencePost_S_{i}", parent,
+                    new Vector3(x, TierOverlook + 0.6f, OverlookZMin + 0.3f),
+                    new Vector3(0.22f, 1.2f, 0.22f), _wood);
+            }
+            Cube("Overlook_FenceRail_S", parent,
+                new Vector3(13f, TierOverlook + 1.05f, OverlookZMin + 0.3f),
+                new Vector3(10.5f, 0.15f, 0.18f), _wood);
+
             for (int i = 0; i < 4; i++)
             {
-                Cube($"Fence_Post_W_{i}", parent, new Vector3(-10f + i * 1.4f, TierGate + 0.9f, -3f),
-                    new Vector3(0.2f, 1.8f, 0.2f), _metal);
-                Cube($"Fence_Post_E_{i}", parent, new Vector3(4.6f + i * 1.4f, TierGate + 0.9f, -3f),
-                    new Vector3(0.2f, 1.8f, 0.2f), _metal);
+                float z = OverlookZMin + 1.2f + i * 2f;
+                Cube($"Overlook_FencePost_E_{i}", parent,
+                    new Vector3(OverlookXMax - 0.3f, TierOverlook + 0.6f, z),
+                    new Vector3(0.22f, 1.2f, 0.22f), _wood);
             }
+            Cube("Overlook_FenceRail_E", parent,
+                new Vector3(OverlookXMax - 0.3f, TierOverlook + 1.05f, -16.6f),
+                new Vector3(0.18f, 0.15f, 7f), _wood);
 
-            Cube("Terrace_Barricade_Stack", parent, new Vector3(-8.5f, TierGate + 0.5f, -16f),
-                new Vector3(2.4f, 1.0f, 1.2f), _plank);
+            Cube("Overlook_LampPost", parent, new Vector3(11f, TierOverlook + 1.6f, -16f),
+                new Vector3(0.2f, 3.2f, 0.2f), _metal);
+            Cube("Overlook_LampHead", parent, new Vector3(11f, TierOverlook + 3.3f, -16f),
+                new Vector3(0.5f, 0.4f, 0.5f), _metal);
+
+            Cube("Overlook_Crate_A", parent, new Vector3(17f, TierOverlook + 0.7f, -19f),
+                new Vector3(1.3f, 1.4f, 1.3f), _plank);
+            Cube("Overlook_Crate_B", parent, new Vector3(17f, TierOverlook + 0.7f, -17.4f),
+                new Vector3(1.3f, 1.4f, 1.3f), _plank);
+            Cube("Overlook_Crate_C", parent, new Vector3(17f, TierOverlook + 2.1f, -19f),
+                new Vector3(1.3f, 1.4f, 1.3f), _plank);
         }
 
-        // -------------------------------------------------- tier 3 main compound
+        // ------------------------------------------------------- 04 — final ascent
+
+        static void BuildFinalAscent(Transform parent)
+        {
+            // Four beats, turning LEFT. Deliberately not one monumental staircase.
+            Ramp("Path_AscentA_ShortRise", parent, WpOverlookExit, WpAscentATop, 4f, _ground);
+
+            Slab("Ascent_Landing", parent, -2.5f, 5.5f, -10.5f, -6.5f,
+                TierLanding, TierLanding + 0.04f, _ground);
+
+            // Chunky broad stairs, short run. The surrounding cliff carries the scale.
+            Stair("Stair_AscentBroad", parent, WpLanding, WpStairsTop, 5f);
+
+            Ramp("Path_AscentD_FinalRise", parent, WpStairsTop, WpCompoundEntrance, 4f, _ground);
+
+            // Retaining walls only where the cut genuinely needs holding back.
+            Cube("Ascent_Retain_West", parent, new Vector3(-8.6f, 14f, -3.5f),
+                new Vector3(0.5f, 5f, 9f), _concrete);
+            Cube("Ascent_Retain_East", parent, new Vector3(3.2f, 13f, -3.5f),
+                new Vector3(0.5f, 4f, 8f), _concrete);
+
+            // The compound gate now sits at the entrance, its old terrace having gone.
+            var gate = NewGroup("MainGate", parent);
+            Cube("GatePost_West", gate, new Vector3(-8.6f, TierCompound + 2f, CompoundSouth),
+                new Vector3(0.8f, 4f, 1f), _concrete);
+            Cube("GatePost_East", gate, new Vector3(-3.4f, TierCompound + 2f, CompoundSouth),
+                new Vector3(0.8f, 4f, 1f), _concrete);
+            Cube("GateLintel", gate, new Vector3(-6f, TierCompound + 4.2f, CompoundSouth),
+                new Vector3(6.1f, 0.4f, 0.8f), _metal);
+            Cube("GateLeaf", gate, new Vector3(-6f, TierCompound + 1.3f, CompoundSouth),
+                new Vector3(GateOpening - 0.2f, 2.6f, 0.2f), _metal);
+        }
+
+        // --------------------------------------------------- tier 3 main compound
+        // UNCHANGED except the approved Storage move from (-18, 4) to (-19, 12).
 
         static void BuildCompound(Transform parent)
         {
-            // Main Yard — a named space, kept clear for sightlines.
             Slab("MainYard", parent, -8f, 8f, 10f, 24f, TierCompound, TierCompound + 0.04f, _ground);
 
-            // Generator Shed 10 x 8.
             var shed = NewGroup("GeneratorShed", parent);
             Building("Shed_Body", shed, new Vector2(-18f, 15.5f), new Vector2(10f, 8f), 4f, _concrete);
             Roof("Shed_Roof", shed, new Vector2(-18f, 15.5f), new Vector2(10.6f, 8.6f), 4f, 1.4f, _metal);
@@ -294,28 +380,23 @@ namespace LastBeacon.Editor
             Cube("Generator_FuelCap", shed, new Vector3(-18.7f, TierCompound + 1.95f, 15.5f),
                 new Vector3(0.7f, 0.3f, 0.7f), _plank);
 
-            // Workshop 12 x 9, backed into the Tier 4 riser.
             var workshop = NewGroup("Workshop", parent);
             Building("Workshop_Body", workshop, new Vector2(-18f, 27f), new Vector2(12f, 9f), 4.5f, _wood);
             Roof("Workshop_Roof", workshop, new Vector2(-18f, 27f), new Vector2(12.6f, 9.6f), 4.5f, 1.8f, _metal);
-            // Door faces east onto the yard. A south-facing door would put the
-            // workshop's own mass between the doorway and the lighthouse, which sits
-            // north-east of it on the knoll (GDD Section 36).
             Cube("Workshop_Door", workshop, new Vector3(-11.85f, TierCompound + 1.1f, 27f),
                 new Vector3(0.3f, 2.2f, 1.6f), _plank);
             Cube("Workshop_BenchProp", workshop, new Vector3(-20f, TierCompound + 0.5f, 26f),
                 new Vector3(4f, 1f, 1.2f), _plank);
 
-            // Storage 10 x 8.
+            // Storage moved north so the final left climb enters the compound cleanly.
             var storage = NewGroup("StorageArea", parent);
-            Building("Storage_Body", storage, new Vector2(-18f, 4f), new Vector2(10f, 8f), 4f, _wood);
-            Roof("Storage_Roof", storage, new Vector2(-18f, 4f), new Vector2(10.6f, 8.6f), 4f, 1.4f, _metal);
-            Cube("Storage_Door", storage, new Vector3(-12.9f, TierCompound + 1.1f, 4f),
+            Building("Storage_Body", storage, new Vector2(-19f, 12f), new Vector2(10f, 8f), 4f, _wood);
+            Roof("Storage_Roof", storage, new Vector2(-19f, 12f), new Vector2(10.6f, 8.6f), 4f, 1.4f, _metal);
+            Cube("Storage_Door", storage, new Vector3(-13.9f, TierCompound + 1.1f, 12f),
                 new Vector3(0.3f, 2.2f, 1.6f), _plank);
-            Cube("Cabinet_Ammunition", storage, new Vector3(-15.5f, TierCompound + 0.8f, 4f),
+            Cube("Cabinet_Ammunition", storage, new Vector3(-16.5f, TierCompound + 0.8f, 12f),
                 new Vector3(1.8f, 1.6f, 0.8f), _metal);
 
-            // Keeper's House 12 x 9 — slightly apart, east side.
             var house = NewGroup("KeepersHouse", parent);
             Building("House_Body", house, new Vector2(18f, 20f), new Vector2(12f, 9f), 5.5f, _wood);
             Roof("House_Roof", house, new Vector2(18f, 20f), new Vector2(12.6f, 9.6f), 5.5f, 2.6f, _plank);
@@ -326,7 +407,6 @@ namespace LastBeacon.Editor
             Cube("Cabinet_Medical", house, new Vector3(12.6f, TierCompound + 0.8f, 18f),
                 new Vector3(0.8f, 1.6f, 1.6f), _metal);
 
-            // Electrical / Control Station 8 x 7.
             var electrical = NewGroup("ElectricalStation", parent);
             Building("Electrical_Body", electrical, new Vector2(17f, 8f), new Vector2(8f, 7f), 3.5f, _concrete);
             Roof("Electrical_Roof", electrical, new Vector2(17f, 8f), new Vector2(8.4f, 7.4f), 3.5f, 1.2f, _metal);
@@ -336,7 +416,7 @@ namespace LastBeacon.Editor
                 new Vector3(0.35f, 2f, 2.2f), _metal);
         }
 
-        // ----------------------------------------------------- tier 4 lighthouse
+        // ------------------------------------------- tier 4 lighthouse — UNCHANGED
 
         static void BuildLighthouse(Transform parent)
         {
@@ -345,92 +425,31 @@ namespace LastBeacon.Editor
 
             Cylinder("Lighthouse_Plinth", parent, pos + Vector3.up * (y + 0.5f), 6.2f, 1.0f, _rock);
             y += 1.0f;
-
             Cylinder("Lighthouse_L1_Operations", parent, pos + Vector3.up * (y + 2.4f), 5.5f, 4.8f, _concrete);
             y += 4.8f;
-
             Cylinder("Lighthouse_Shaft", parent, pos + Vector3.up * (y + 3.0f), 4.6f, 6.0f, _concrete);
             y += 6.0f;
-
             Cylinder("Lighthouse_L2_Mechanical", parent, pos + Vector3.up * (y + 2.0f), 5.0f, 4.0f, _concrete);
             y += 4.0f;
-
             Cube("Lighthouse_Balcony", parent, pos + Vector3.up * (y + 0.15f),
                 new Vector3(12.4f, 0.3f, 12.4f), _metal);
-
             Cylinder("Lighthouse_L3_LanternRoom", parent, pos + Vector3.up * (y + 1.9f), 4.0f, 3.6f, _metal);
             y += 3.6f;
-
             Cylinder("Lighthouse_Cap", parent, pos + Vector3.up * (y + 0.7f), 4.2f, 1.4f, _metal);
-        }
 
-        /// <summary>World-space centre of the lantern room. Used by the LOS tests.</summary>
-        public static Vector3 LanternCentre =>
-            new Vector3(LighthouseXZ.x, TierLighthouse + 1f + 4.8f + 6f + 4f + 1.8f, LighthouseXZ.y);
-
-        // ----------------------------------------------------------------- paths
-
-        static void BuildPaths(Transform parent)
-        {
-            // Dock -> Tier 1. Ramp, 4 m wide, 32 degrees.
-            Ramp("Ramp_DockToLanding", parent,
-                new Vector3(-4f, TierDock, -44f), new Vector3(-4f, TierLanding, IslandSouth), 4f, _ground);
-
-            // Tier 1 -> Tier 2. Primary stair, 4 m wide, 33.7 degrees.
-            Stair("Stair_LandingToGate", parent,
-                new Vector3(1f, TierLanding, -29f), new Vector3(1f, TierGate, LandingNorth), 4f);
-
-            // Tier 2 -> Tier 3. Primary stair, 4 m wide.
-            Stair("Stair_GateToCompound", parent,
-                new Vector3(-3f, TierGate, -7f), new Vector3(-3f, TierCompound, GateNorth), 4f);
-
-            // Tier 2 -> Tier 3. Secondary maintenance ramp, 2.5 m wide, 26.6 degrees.
-            Ramp("Ramp_MaintenanceRoute", parent,
-                new Vector3(9f, TierGate, -10f), new Vector3(9f, TierCompound, GateNorth), 2.5f, _ground);
-
-            // Tier 3 -> Tier 4. Short stair to the lighthouse, 5 m wide.
             Stair("Stair_CompoundToLighthouse", parent,
                 new Vector3(0f, TierCompound, 26f), new Vector3(0f, TierLighthouse, CompoundNorth), 5f);
 
-            // Walkable surface strips, so the intended routes read at blockout stage.
-            Slab("Path_LandingSpine", parent, -6f, 6f, -34f, LandingNorth,
-                TierLanding, TierLanding + 0.03f, _ground);
-            Slab("Path_TerraceSpine", parent, -9f, 9f, -19f, GateNorth,
-                TierGate, TierGate + 0.03f, _ground);
-            Slab("Path_CompoundApproach", parent, -6f, 6f, GateNorth, 10f,
-                TierCompound, TierCompound + 0.03f, _ground);
-            Slab("Path_LighthouseApproach", parent, -4f, 4f, 24f, CompoundNorth,
-                TierCompound, TierCompound + 0.03f, _ground);
+            Cube("Retain_Knoll_West", parent,
+                new Vector3(-7.75f, TierLighthouse + 0.55f, CompoundNorth), new Vector3(8.5f, 1.1f, 0.5f), _concrete);
+            Cube("Retain_Knoll_East", parent,
+                new Vector3(7.75f, TierLighthouse + 0.55f, CompoundNorth), new Vector3(8.5f, 1.1f, 0.5f), _concrete);
         }
 
-        static void BuildRetainingWalls(Transform parent)
-        {
-            const float h = 1.1f;
-            // The Tier 2 lip is a kerb, not a parapet: at 1.1 m it clipped the
-            // lighthouse sightline from the back half of the lower landing.
-            const float kerb = 0.6f;
+        public static Vector3 LanternCentre =>
+            new Vector3(LighthouseXZ.x, TierLighthouse + 1f + 4.8f + 6f + 4f + 1.8f, LighthouseXZ.y);
 
-            // Tier 2 south lip, split around the arriving stair (x -1..3).
-            Cube("Retain_Tier2_Lip_West", parent,
-                new Vector3(-6f, TierGate + kerb / 2f, LandingNorth), new Vector3(10f, kerb, 0.5f), _concrete);
-            Cube("Retain_Tier2_Lip_East", parent,
-                new Vector3(7f, TierGate + kerb / 2f, LandingNorth), new Vector3(8f, kerb, 0.5f), _concrete);
-
-            // Tier 3 south lip — FLANKS ONLY. Nothing crosses the central corridor:
-            // the gate-to-lantern sightline clears this lip by only ~1.2 m.
-            Cube("Retain_Tier3_Lip_West", parent,
-                new Vector3(-19.25f, TierCompound + h / 2f, GateNorth), new Vector3(16.5f, h, 0.5f), _concrete);
-            Cube("Retain_Tier3_Lip_East", parent,
-                new Vector3(19.25f, TierCompound + h / 2f, GateNorth), new Vector3(16.5f, h, 0.5f), _concrete);
-
-            // Tier 4 lip, split around the stair.
-            Cube("Retain_Tier4_Lip_West", parent,
-                new Vector3(-7.75f, TierLighthouse + h / 2f, CompoundNorth), new Vector3(8.5f, h, 0.5f), _concrete);
-            Cube("Retain_Tier4_Lip_East", parent,
-                new Vector3(7.75f, TierLighthouse + h / 2f, CompoundNorth), new Vector3(8.5f, h, 0.5f), _concrete);
-        }
-
-        // --------------------------------------------------------------- markers
+        // ----------------------------------------------------------------- markers
 
         static void BuildMarkers(Transform parent)
         {
@@ -446,18 +465,22 @@ namespace LastBeacon.Editor
                 "Damage repair panel.");
             Marker(parent, "Workshop_Bench", new Vector3(-20f, TierCompound + 1.1f, 26f), task,
                 "Trap repair, ammo crafting (GDD 24).");
-            Marker(parent, "Ammo_Storage", new Vector3(-15.5f, TierCompound + 1.7f, 4f), task,
+            Marker(parent, "Ammo_Storage", new Vector3(-16.5f, TierCompound + 1.7f, 12f), task,
                 "Ammunition cabinet.");
             Marker(parent, "Fuse_Storage", new Vector3(13.4f, TierCompound + 1.7f, 9.8f), task,
                 "Fuse cabinet at the switchboard.");
             Marker(parent, "Medical_Storage", new Vector3(12.6f, TierCompound + 1.7f, 18f), task,
                 "Medical cabinet, Keeper's House.");
-            Marker(parent, "MainGate_InspectionPoint", new Vector3(0f, TierGate + 1.0f, -5.8f),
-                BlockoutMarker.MarkerKind.Inspection, "Visitors questioned here (GDD 12-13).");
-            Marker(parent, "MainGate_TrapSocket", new Vector3(0f, TierGate + 0.2f, -7.5f), defense,
-                "Shock trap socket, outside the gate.");
-            Marker(parent, "MainGate_BarricadeSocket", new Vector3(0f, TierGate + 0.2f, -4f), defense,
+
+            Marker(parent, "MainGate_InspectionPoint", new Vector3(-6f, TierCompound + 1.0f, 3.6f),
+                BlockoutMarker.MarkerKind.Inspection, "Visitors questioned at the compound gate.");
+            Marker(parent, "MainGate_BarricadeSocket", new Vector3(-6f, TierCompound + 0.2f, CompoundSouth), defense,
                 "Barricade socket in the gate opening.");
+            Marker(parent, "MainGate_TrapSocket", new Vector3(-5.4f, 16.2f, -0.6f), defense,
+                "Shock trap on the final rise below the gate.");
+            Marker(parent, "Overlook_TrapSocket", new Vector3(10.5f, TierOverlook + 0.2f, -18.5f), defense,
+                "Shock trap on the overlook entry throat.");
+
             Marker(parent, "ShiftBell_Point", new Vector3(3f, TierCompound + 1.4f, 24f), control,
                 "Ring to end the shift (GDD 15).");
             Marker(parent, "BeaconControl_Point", new Vector3(2.5f, TierLighthouse + 1.4f, 32.8f), control,
@@ -465,16 +488,16 @@ namespace LastBeacon.Editor
             Marker(parent, "Radio_Point", new Vector3(-2.5f, TierLighthouse + 1.4f, 32.8f), control,
                 "Radio, Operations floor.");
 
-            Marker(parent, "Courtyard_Centre", new Vector3(0f, TierCompound + 0.2f, 17f),
+            Marker(parent, "Courtyard_Centre", WpYardCentre + Vector3.up * 0.2f,
                 BlockoutMarker.MarkerKind.Landmark, "Main Yard 16 x 14. Keep clear for sightlines.");
-            Marker(parent, "Spawn_Player", new Vector3(0f, TierDock + 0.6f, -52f),
+            Marker(parent, "Spawn_Player", new Vector3(0f, TierDock + 0.6f, -46f),
                 BlockoutMarker.MarkerKind.SpawnPoint, "Blockout walk starts at the dock.");
-            Marker(parent, "Entrance_MainGate", new Vector3(0f, TierGate + 0.2f, -4f),
-                BlockoutMarker.MarkerKind.Entrance, "Primary enemy approach.");
-            Marker(parent, "Task_DockDelivery", new Vector3(3.6f, TierDock + 0.9f, -46f), task,
+            Marker(parent, "Entrance_MainGate", WpCompoundEntrance + Vector3.up * 0.2f,
+                BlockoutMarker.MarkerKind.Entrance, "Primary enemy approach, top of the serpentine.");
+            Marker(parent, "Task_DockDelivery", new Vector3(4.2f, TierDock + 0.9f, -39f), task,
                 "Supply drop-off. Carry loop starts here.");
-            Marker(parent, "Defense_LandingSocket", new Vector3(0f, TierLanding + 0.2f, -26f), defense,
-                "First fallback, lower landing.");
+            Marker(parent, "Overlook_FenceLookout", WpFenceLookout + Vector3.up * 0.2f,
+                BlockoutMarker.MarkerKind.Landmark, "Look back down at the dock from here.");
         }
 
         static void Marker(Transform parent, string name, Vector3 position,
@@ -491,24 +514,16 @@ namespace LastBeacon.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        // -------------------------------------------------------- review cameras
+        // ---------------------------------------------------------- review cameras
 
-        /// <summary>
-        /// Composition review points, at first-person eye height above their tier.
-        /// Named exactly as the task spec requires so they can be checked by hand.
-        /// </summary>
         public static readonly (string Name, Vector3 Eye, Vector3 LookAt)[] ReviewCameras =
         {
-            ("CAM_DockToLighthouse",       new Vector3(0f, TierDock + 0.4f + EyeHeight, -52f), LanternCentre),
-            // Sits at the landing's arrival end, west of the stair. Further north the
-            // Tier 2 lip subtends too much angle to see the tower at all.
-            ("CAM_LowerPathToLighthouse",  new Vector3(-4f, TierLanding + EyeHeight, -33f),    LanternCentre),
-            ("CAM_GateToLighthouse",       new Vector3(0f, TierGate + EyeHeight, -5.8f),       LanternCentre),
-            ("CAM_MainYard",               new Vector3(0f, TierCompound + EyeHeight, 12f),     LanternCentre),
-            ("CAM_GeneratorCourtyard",     new Vector3(-12f, TierCompound + EyeHeight, 15.5f), LanternCentre),
-            // Stands on the lighthouse plinth (top y 22), not the bare knoll.
-            ("CAM_LighthouseLookingDown",  new Vector3(0f, TierLighthouse + 1f + EyeHeight, 33f),
-                new Vector3(0f, TierCompound, 8f))
+            ("CAM_Dock",          new Vector3(0f, TierDock + 0.4f + EyeHeight, -46f),      LanternCentre),
+            ("CAM_LowerLeft",     new Vector3(-14f, TierLowerAscent + EyeHeight, -28f),    LanternCentre),
+            ("CAM_RightTraverse", new Vector3(0f, 6.5f + EyeHeight, -22f),                 LanternCentre),
+            ("CAM_Overlook",      new Vector3(15.5f, TierOverlook + EyeHeight, -17.5f),    LanternCentre),
+            ("CAM_FinalAscent",   new Vector3(0f, TierLanding + EyeHeight, -7.5f),         LanternCentre),
+            ("CAM_CompoundEntry", new Vector3(-6f, TierCompound + EyeHeight, 2f),          LanternCentre)
         };
 
         static void BuildReviewCameras(Transform parent)
@@ -522,7 +537,7 @@ namespace LastBeacon.Editor
             }
         }
 
-        // ------------------------------------------------------------------ lighting
+        // ---------------------------------------------------------------- lighting
 
         static void BuildLighting(Transform parent)
         {
@@ -549,15 +564,20 @@ namespace LastBeacon.Editor
             moon.shadows = LightShadows.Soft;
             RenderSettings.sun = moon;
 
+            // One lamp per route beat, so the serpentine reads at night.
+            WarmLamp(group, "Lamp_Dock", new Vector3(0f, 3.4f, -42f), 20f, 6f);
+            WarmLamp(group, "Lamp_LowerLeft", new Vector3(-14f, 7f, -28f), 18f, 6f);
+            WarmLamp(group, "Lamp_Traverse", new Vector3(0f, 9.5f, -22f), 18f, 6f);
+            WarmLamp(group, "Lamp_Overlook", new Vector3(11f, 12f, -16f), 20f, 7f);
+            WarmLamp(group, "Lamp_AscentLanding", new Vector3(1.5f, 14.5f, -8.5f), 16f, 6f);
+            WarmLamp(group, "Lamp_CompoundGate", new Vector3(-6f, 20f, 2f), 20f, 8f);
+
             WarmLamp(group, "Lamp_Yard", new Vector3(0f, TierCompound + 6f, 17f), 32f, 9f);
             WarmLamp(group, "Lamp_GeneratorShed", new Vector3(-13f, TierCompound + 3.6f, 15.5f), 16f, 6f);
             WarmLamp(group, "Lamp_Workshop", new Vector3(-18f, TierCompound + 4f, 22f), 16f, 6f);
             WarmLamp(group, "Lamp_KeepersHouse", new Vector3(12f, TierCompound + 4.4f, 20f), 16f, 5.5f);
-            WarmLamp(group, "Lamp_Storage", new Vector3(-13f, TierCompound + 3.6f, 4f), 14f, 5f);
+            WarmLamp(group, "Lamp_Storage", new Vector3(-14f, TierCompound + 3.6f, 12f), 14f, 5f);
             WarmLamp(group, "Lamp_Electrical", new Vector3(13f, TierCompound + 3.8f, 8f), 14f, 5f);
-            WarmLamp(group, "Lamp_Gate", new Vector3(0f, TierGate + 3.8f, -4f), 20f, 8f);
-            WarmLamp(group, "Lamp_Landing", new Vector3(0f, TierLanding + 3.4f, -26f), 18f, 6f);
-            WarmLamp(group, "Lamp_Dock", new Vector3(-2.6f, TierDock + 3.4f, -46f), 20f, 6f);
 
             var pivot = new GameObject("Beacon_Pivot");
             pivot.transform.SetParent(group, false);
@@ -590,13 +610,13 @@ namespace LastBeacon.Editor
             light.shadows = LightShadows.None;
         }
 
-        // -------------------------------------------------------------------- player
+        // ------------------------------------------------------------------ player
 
         static void BuildPlayer(Transform parent)
         {
             var go = new GameObject("BlockoutPlayer (PLACEHOLDER - delete in Phase 2)");
             go.transform.SetParent(parent, false);
-            go.transform.position = new Vector3(0f, TierDock + 1.2f, -52f);
+            go.transform.position = new Vector3(0f, TierDock + 1.2f, -46f);
 
             var controller = go.AddComponent<CharacterController>();
             controller.height = 1.8f;
@@ -619,7 +639,7 @@ namespace LastBeacon.Editor
             go.AddComponent<BlockoutWalker>();
         }
 
-        // ------------------------------------------------------------------- helpers
+        // ----------------------------------------------------------------- helpers
 
         static Transform NewGroup(string name, Transform parent)
         {
@@ -628,7 +648,6 @@ namespace LastBeacon.Editor
             return go.transform;
         }
 
-        /// <summary>Axis-aligned box given by its min/max on each axis.</summary>
         static ProBuilderMesh Slab(string name, Transform parent,
             float xMin, float xMax, float zMin, float zMax, float yMin, float yMax, Material material)
         {
@@ -678,35 +697,56 @@ namespace LastBeacon.Editor
             return pb;
         }
 
-        /// <summary>Stair rising from <paramref name="from"/> to <paramref name="to"/> along +Z.</summary>
+        /// <summary>
+        /// Sloped walkable slab between two points, at any heading. Oriented along
+        /// the full 3D direction so diagonal ramps stay flush with the route.
+        /// </summary>
+        static ProBuilderMesh Ramp(string name, Transform parent, Vector3 from, Vector3 to, float width, Material material)
+        {
+            Vector3 delta = to - from;
+            var pb = ShapeGenerator.GenerateCube(PivotLocation.Center, new Vector3(width, 0.4f, delta.magnitude));
+            pb.gameObject.name = name;
+            pb.transform.SetParent(parent, false);
+            pb.transform.position = (from + to) / 2f;
+            pb.transform.rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            Finish(pb, material);
+            return pb;
+        }
+
+        /// <summary>
+        /// Stair between two points. Only the heading is rotated — the steps stay
+        /// level, so the rise is taken vertically instead of tilting the flight.
+        /// </summary>
         static ProBuilderMesh Stair(string name, Transform parent, Vector3 from, Vector3 to, float width)
         {
-            float rise = to.y - from.y;
-            float run = to.z - from.z;
+            Vector3 delta = to - from;
+            var horizontal = new Vector3(delta.x, 0f, delta.z);
+            float rise = delta.y;
             int steps = Mathf.Max(4, Mathf.RoundToInt(rise / 0.35f));
 
             var pb = ShapeGenerator.GenerateStair(PivotLocation.Center,
-                new Vector3(width, rise, run), steps, true);
+                new Vector3(width, rise, horizontal.magnitude), steps, true);
             pb.gameObject.name = name;
             pb.transform.SetParent(parent, false);
-            pb.transform.position = new Vector3(from.x, (from.y + to.y) / 2f, (from.z + to.z) / 2f);
+            pb.transform.position = (from + to) / 2f;
+            pb.transform.rotation = Quaternion.LookRotation(horizontal.normalized, Vector3.up);
             Finish(pb, _concrete);
             return pb;
         }
 
-        /// <summary>Sloped slab rising from <paramref name="from"/> to <paramref name="to"/>.</summary>
-        static ProBuilderMesh Ramp(string name, Transform parent, Vector3 from, Vector3 to, float width, Material material)
+        /// <summary>
+        /// Broad faceted cliff plane, battered between a foot edge and a top edge.
+        /// Used instead of vertical terrace walls so the route reads as carved rock.
+        /// </summary>
+        static ProBuilderMesh BatteredFace(string name, Transform parent, Vector3 footEdge, Vector3 topEdge,
+            float width, Material material)
         {
-            float rise = to.y - from.y;
-            float run = to.z - from.z;
-            float length = Mathf.Sqrt(rise * rise + run * run);
-            float angle = Mathf.Atan2(rise, run) * Mathf.Rad2Deg;
-
-            var pb = ShapeGenerator.GenerateCube(PivotLocation.Center, new Vector3(width, 0.4f, length));
+            Vector3 delta = topEdge - footEdge;
+            var pb = ShapeGenerator.GenerateCube(PivotLocation.Center, new Vector3(width, 1.2f, delta.magnitude));
             pb.gameObject.name = name;
             pb.transform.SetParent(parent, false);
-            pb.transform.position = new Vector3(from.x, (from.y + to.y) / 2f, (from.z + to.z) / 2f);
-            pb.transform.rotation = Quaternion.Euler(-angle, 0f, 0f);
+            pb.transform.position = (footEdge + topEdge) / 2f;
+            pb.transform.rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
             Finish(pb, material);
             return pb;
         }
@@ -728,7 +768,7 @@ namespace LastBeacon.Editor
                 StaticEditorFlags.BatchingStatic | StaticEditorFlags.NavigationStatic);
         }
 
-        // ----------------------------------------------------------------- materials
+        // --------------------------------------------------------------- materials
 
         static void CreateMaterials()
         {
