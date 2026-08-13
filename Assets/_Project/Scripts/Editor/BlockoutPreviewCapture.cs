@@ -40,67 +40,75 @@ namespace LastBeacon.Editor
         {
             new Shot
             {
-                Name = "01_island_aerial",
-                Position = new Vector3(58f, 46f, -78f),
-                LookAt = new Vector3(-4f, 16f, 8f),
+                Name = "00_island_aerial",
+                Position = new Vector3(62f, 44f, -80f),
+                LookAt = new Vector3(-2f, 14f, 4f),
                 FieldOfView = 55f,
                 LayoutLighting = true
             },
             new Shot
             {
-                Name = "01b_island_aerial_night",
-                Position = new Vector3(58f, 46f, -78f),
-                LookAt = new Vector3(-4f, 16f, 8f),
-                FieldOfView = 55f
-            },
-            new Shot
-            {
-                Name = "02_side_elevation",
-                Position = new Vector3(96f, 26f, -14f),
-                LookAt = new Vector3(0f, 20f, 4f),
+                Name = "00b_side_elevation",
+                Position = new Vector3(98f, 24f, -18f),
+                LookAt = new Vector3(0f, 18f, 2f),
                 FieldOfView = 45f,
                 LayoutLighting = true
             },
             new Shot
             {
-                Name = "03_CAM_DockToLighthouse",
-                Position = new Vector3(0f, 2.1f, -52f),
+                Name = "00c_route_plan",
+                Position = new Vector3(0f, 104f, -16f),
+                LookAt = new Vector3(0f, 0f, -16f),
+                FieldOfView = 62f,
+                LayoutLighting = true
+            },
+            new Shot
+            {
+                Name = "01_CAM_Dock",
+                Position = new Vector3(0f, 2.1f, -46f),
                 LookAt = new Vector3(0f, 32.6f, 38f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "04_CAM_LowerPathToLighthouse",
-                Position = new Vector3(-4f, 6.7f, -33f),
+                Name = "02_CAM_LowerLeft",
+                Position = new Vector3(-14f, 5.7f, -28f),
                 LookAt = new Vector3(0f, 32.6f, 38f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "05_CAM_GateToLighthouse",
-                Position = new Vector3(0f, 12.7f, -5.8f),
-                LookAt = new Vector3(0f, 34f, 38f),
+                Name = "03_CAM_RightTraverse",
+                Position = new Vector3(0f, 8.2f, -22f),
+                LookAt = new Vector3(4f, 30f, 30f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "06_CAM_MainYard",
-                Position = new Vector3(0f, 18.7f, 12f),
-                LookAt = new Vector3(0f, 34f, 38f),
-                FieldOfView = 70f
-            },
-            new Shot
-            {
-                Name = "07_CAM_GeneratorCourtyard",
-                Position = new Vector3(-12f, 18.7f, 15.5f),
+                Name = "04_CAM_Overlook",
+                Position = new Vector3(15.5f, 10.7f, -17.5f),
                 LookAt = new Vector3(0f, 32.6f, 38f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "08_CAM_LighthouseLookingDown",
-                Position = new Vector3(0f, 23.7f, 33f),
-                LookAt = new Vector3(0f, 17f, 0f),
+                Name = "04b_CAM_Overlook_LookingBack",
+                Position = new Vector3(15.5f, 10.7f, -17.5f),
+                LookAt = new Vector3(2f, 0f, -46f),
+                FieldOfView = 75f
+            },
+            new Shot
+            {
+                Name = "05_CAM_FinalAscent",
+                Position = new Vector3(0f, 13.2f, -7.5f),
+                LookAt = new Vector3(-4f, 26f, 22f),
+                FieldOfView = 70f
+            },
+            new Shot
+            {
+                Name = "06_CAM_CompoundEntry",
+                Position = new Vector3(-6f, 18.7f, 2f),
+                LookAt = new Vector3(0f, 32.6f, 38f),
                 FieldOfView = 70f
             }
         };

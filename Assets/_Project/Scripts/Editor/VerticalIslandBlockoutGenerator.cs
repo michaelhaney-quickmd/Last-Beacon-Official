@@ -253,9 +253,9 @@ namespace LastBeacon.Editor
             Cube("Dock_Crane_Mast", parent, new Vector3(5.2f, 3.6f, -36.5f), new Vector3(0.5f, 4.2f, 0.5f), _metal);
             Cube("Dock_Crane_Jib", parent, new Vector3(3.4f, 5.5f, -38f), new Vector3(0.4f, 0.4f, 4f), _metal);
 
-            Cube("Dock_Crate_A", parent, new Vector3(-4.2f, 0.7f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
-            Cube("Dock_Crate_B", parent, new Vector3(-4.2f, 0.7f, -39.4f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
-            Cube("Dock_Crate_C", parent, new Vector3(-4.2f, 2.1f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_A", parent, new Vector3(-7.4f, 0.7f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_B", parent, new Vector3(-7.4f, 0.7f, -39.4f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_C", parent, new Vector3(-7.4f, 2.1f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
         }
 
         // -------------------------------------------------- 01 — lower-left ascent
@@ -282,8 +282,10 @@ namespace LastBeacon.Editor
             Ramp("Path_TraverseLeg2", parent, WpTraverseMid, WpOverlookEntry, 4f, _ground);
 
             // Retaining kerb on the seaward side only, where it is genuinely useful.
-            Cube("Traverse_Kerb_A", parent, new Vector3(-7f, 5.6f, -26.6f), new Vector3(12f, 0.5f, 0.4f), _concrete);
-            Cube("Traverse_Kerb_B", parent, new Vector3(5f, 8.1f, -21.6f), new Vector3(10f, 0.5f, 0.4f), _concrete);
+            // Kept low and offset: an eye-height kerb on the inside of the bend
+            // clipped the lighthouse sightline from the traverse.
+            Kerb("Traverse_Kerb_A", parent, WpLowerLeftTop, WpTraverseMid, 2.3f);
+            Kerb("Traverse_Kerb_B", parent, WpTraverseMid, WpOverlookEntry, 2.3f);
         }
 
         // ----------------------------------------------------- 03 — right overlook
@@ -359,8 +361,9 @@ namespace LastBeacon.Editor
                 new Vector3(0.8f, 4f, 1f), _concrete);
             Cube("GateLintel", gate, new Vector3(-6f, TierCompound + 4.2f, CompoundSouth),
                 new Vector3(6.1f, 0.4f, 0.8f), _metal);
-            Cube("GateLeaf", gate, new Vector3(-6f, TierCompound + 1.3f, CompoundSouth),
+            var leaf = Cube("GateLeaf", gate, new Vector3(-8.7f, TierCompound + 1.3f, CompoundSouth + 2.2f),
                 new Vector3(GateOpening - 0.2f, 2.6f, 0.2f), _metal);
+            leaf.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
         }
 
         // --------------------------------------------------- tier 3 main compound
@@ -730,6 +733,30 @@ namespace LastBeacon.Editor
             pb.transform.SetParent(parent, false);
             pb.transform.position = (from + to) / 2f;
             pb.transform.rotation = Quaternion.LookRotation(horizontal.normalized, Vector3.up);
+            Finish(pb, _concrete);
+            return pb;
+        }
+
+        /// <summary>
+        /// Low kerb running alongside a path segment, offset to its seaward side.
+        /// Follows the ramp's slope so it never floats or rises to eye height.
+        /// </summary>
+        static ProBuilderMesh Kerb(string name, Transform parent, Vector3 from, Vector3 to, float offset)
+        {
+            Vector3 delta = to - from;
+            var horizontal = new Vector3(delta.x, 0f, delta.z).normalized;
+            // Seaward side is to the path's right when climbing inland.
+            var side = new Vector3(horizontal.z, 0f, -horizontal.x);
+
+            Vector3 a = from + side * offset;
+            Vector3 b = to + side * offset;
+
+            var pb = ShapeGenerator.GenerateCube(PivotLocation.Center,
+                new Vector3(0.35f, 0.45f, (b - a).magnitude));
+            pb.gameObject.name = name;
+            pb.transform.SetParent(parent, false);
+            pb.transform.position = (a + b) / 2f + Vector3.up * 0.2f;
+            pb.transform.rotation = Quaternion.LookRotation((b - a).normalized, Vector3.up);
             Finish(pb, _concrete);
             return pb;
         }
