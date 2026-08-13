@@ -4,7 +4,7 @@
 
 - **Engine:** Unity 6 (6000.5.4f1), URP
 - **Target:** PC / Steam
-- **Status:** Phase 0 complete — project set up, no gameplay code yet. Next: Phase 1, compound blockout.
+- **Status:** Phase 1 complete — compact compound blockout in place, no gameplay code yet. Next: Phase 2, core player systems.
 - **Co-op:** Netcode for GameObjects + Relay/Lobby, server-authoritative. Voice via Vivox.
 
 Open the project at the repository root with Unity 6000.5.4f1. The current test scene is `Assets/_Project/Scenes/Sandbox.unity`.
@@ -32,6 +32,10 @@ Unity scene/prefab merges use UnityYAMLMerge (`.gitattributes`). Configure it on
 git config merge.unityyamlmerge.cmd '"/Volumes/Unity/UnityEditors/6000.5.4f1/Unity.app/Contents/Helpers/UnityYAMLMerge" merge -p "$BASE" "$REMOTE" "$LOCAL" "$MERGED"'
 ```
 
+## Blockout
+
+`Tools > Last Beacon > Generate Compact Compound` rebuilds the blockout scene from scratch. It is a starting point for hand editing — once you start moving faces, stop re-running it. Layout constants live at the top of [CompactCompoundBlockoutGenerator.cs](Assets/_Project/Scripts/Editor/CompactCompoundBlockoutGenerator.cs); the EditMode tests enforce the footprint, walkway, gate, marker and line-of-sight budgets.
+
 ## Next step
 
-Phase 1 in the workflow doc: ProBuilder blockout of the vertical-slice compound — lighthouse exterior with three floor volumes, generator shed, workshop, Keeper's House exterior, main gate, short dock path. No sea cave.
+Phase 2 in the workflow doc: core player systems — `PlayerController`, `Interactable`, `CarryableItem`, held-item inventory, health/damage/revive, flashlight. Server-authoritative from the start (see [CLAUDE.md](CLAUDE.md)).

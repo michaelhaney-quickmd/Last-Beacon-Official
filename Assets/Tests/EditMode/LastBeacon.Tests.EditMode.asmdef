@@ -3,6 +3,7 @@
     "rootNamespace": "LastBeacon.Tests",
     "references": [
         "LastBeacon.Runtime",
+        "LastBeacon.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

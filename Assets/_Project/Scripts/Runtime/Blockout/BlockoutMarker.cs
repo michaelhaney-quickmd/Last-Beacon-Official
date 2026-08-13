@@ -9,13 +9,16 @@ namespace LastBeacon.Blockout
     /// </summary>
     public class BlockoutMarker : MonoBehaviour
     {
+        // Appended only — existing values keep their serialized indices.
         public enum MarkerKind
         {
             Landmark,
             TaskStation,
             Entrance,
             DefenseSocket,
-            SpawnPoint
+            SpawnPoint,
+            Inspection,
+            SystemControl
         }
 
         [SerializeField] MarkerKind kind = MarkerKind.Landmark;
@@ -28,6 +31,8 @@ namespace LastBeacon.Blockout
             MarkerKind.Entrance => new Color(0.35f, 0.8f, 1f),
             MarkerKind.DefenseSocket => new Color(1f, 0.35f, 0.35f),
             MarkerKind.SpawnPoint => new Color(0.4f, 1f, 0.5f),
+            MarkerKind.Inspection => new Color(0.85f, 0.5f, 1f),
+            MarkerKind.SystemControl => new Color(0.5f, 1f, 0.9f),
             _ => new Color(0.85f, 0.85f, 0.85f)
         };
 
