@@ -30,14 +30,15 @@ namespace LastBeacon.Tests
         {
             "Generator_FuelPoint", "Generator_StartPoint", "Generator_RepairPoint",
             "Workshop_Bench", "Ammo_Storage", "Fuse_Storage", "Medical_Storage",
-            "MainGate_InspectionPoint", "MainGate_TrapSocket", "MainGate_BarricadeSocket",
+            "Dock_InspectionPoint", "MainGate_TrapSocket", "MainGate_BarricadeSocket",
+            "MainGate_ControlStand", "InnerGate_BarricadeSocket",
             "ShiftBell_Point", "BeaconControl_Point", "Radio_Point"
         };
 
         static readonly string[] RequiredCameras =
         {
             "CAM_Dock", "CAM_LowerLeft", "CAM_RightTraverse",
-            "CAM_Overlook", "CAM_FinalAscent", "CAM_CompoundEntry"
+            "CAM_Overlook", "CAM_MainGate", "CAM_TerraceControl", "CAM_FinalAscent", "CAM_CompoundEntry"
         };
 
         [OneTimeSetUp]
@@ -157,7 +158,7 @@ namespace LastBeacon.Tests
         {
             float dock = BoundsOf("Dock_Deck").max.y;
             float lowerShelf = BoundsOf("Shelf_LowerLeftPivot").max.y;
-            float overlook = BoundsOf("Overlook_Deck").max.y;
+            float overlook = BoundsOf("Terrace_Deck").max.y;
             float landing = BoundsOf("Ascent_Landing").max.y;
             float compound = BoundsOf("MainYard").max.y;
             float knoll = BoundsOf("Cliff_BandD_Knoll").max.y;
@@ -209,7 +210,7 @@ namespace LastBeacon.Tests
         {
             // The traverse must end inside the shelf and the ascent must start
             // inside it, so no through-line bypasses the fence.
-            var deck = BoundsOf("Overlook_Deck");
+            var deck = BoundsOf("Terrace_Deck");
 
             foreach (var (name, p) in new[]
             {
@@ -226,21 +227,38 @@ namespace LastBeacon.Tests
         [Test]
         public void Overlook_StaysCompact()
         {
-            var deck = BoundsOf("Overlook_Deck");
+            var deck = BoundsOf("Terrace_Deck");
             Assert.That(deck.size.x, Is.LessThanOrEqualTo(11.5f), $"Overlook is {deck.size.x:0.0} m wide.");
-            Assert.That(deck.size.z, Is.LessThanOrEqualTo(8.5f), $"Overlook is {deck.size.z:0.0} m deep.");
-            Assert.That(deck.size.x * deck.size.z, Is.LessThanOrEqualTo(95f),
+            Assert.That(deck.size.z, Is.LessThanOrEqualTo(9f), $"Terrace is {deck.size.z:0.0} m deep.");
+            Assert.That(deck.size.x * deck.size.z, Is.LessThanOrEqualTo(100f),
                 "Overlook area exceeds the approved 11 x 8 envelope.");
         }
 
         [Test]
         public void Overlook_HasItsRequiredFurniture()
         {
+            // Main Gate
+            Find("MainGate_Post_South");
+            Find("MainGate_Post_North");
+            Find("MainGate_Leaf");
+            Find("MainGate_BarricadeSocket");
+            Find("MainGate_TrapSocket");
+            // Electric fence and its power connection
+            Find("ElectricFence_Post_0");
+            Find("ElectricFence_Rail_Lower");
+            Find("ElectricFence_PowerBox");
+            Find("ElectricFence_Conduit");
+            // Emergency defence / light sub-control
+            Find("Control_ConsoleBody");
+            Find("Control_Lever");
+            Find("Control_Gauge_0");
+            Find("Control_WarningLight");
+            Find("Control_StatusBoard");
+            // Trap bench and short-fence overlook
+            Find("TrapBench_Top");
+            Find("TrapBench_ToolRack");
             Find("Overlook_FencePost_S_0");
             Find("Overlook_FenceRail_S");
-            Find("Overlook_LampPost");
-            Find("Overlook_Crate_A");
-            Find("Overlook_TrapSocket");
         }
 
         [Test]

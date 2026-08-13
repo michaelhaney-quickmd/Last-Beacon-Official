@@ -87,10 +87,10 @@ namespace LastBeacon.Editor
         /// <summary>Where the ramp reaches shelf height; the pivot pad carries the bend.</summary>
         public static readonly Vector3 LowerLeftRampTop = new Vector3(-14f, 4f, -30f);
         public static readonly Vector3 WpTraverseMid = new Vector3(0f, 6.5f, -22f);
-        public static readonly Vector3 WpOverlookEntry = new Vector3(10f, 9f, -19f);
+        public static readonly Vector3 WpOverlookEntry = new Vector3(10f, 9f, -17.2f);
         public static readonly Vector3 WpFenceLookout = new Vector3(15.5f, 9f, -17.5f);
-        public static readonly Vector3 WpOverlookExit = new Vector3(10.5f, 9f, -12.5f);
-        public static readonly Vector3 WpAscentATop = new Vector3(4f, 11.5f, -9f);
+        public static readonly Vector3 WpOverlookExit = new Vector3(11f, 9f, -12f);
+        public static readonly Vector3 WpAscentATop = new Vector3(6.5f, 11.5f, -9f);
         public static readonly Vector3 WpLanding = new Vector3(0f, 11.5f, -7.5f);
         public static readonly Vector3 WpStairsTop = new Vector3(-5f, 16f, -1f);
         public static readonly Vector3 WpCompoundEntrance = new Vector3(-6f, 17f, 2f);
@@ -112,18 +112,19 @@ namespace LastBeacon.Editor
         {
             WpJettyEnd, WpShoreApron, WpRampBase, WpIntroTop, LowerLeftRampTop, WpLowerLeftTop, WpTraverseMid,
             OverlookDeckEdge, WpOverlookEntry, WpFenceLookout, WpOverlookExit,
-            LandingEdge, WpLanding, WpStairsTop, WpCompoundEntrance, WpYardCentre
+            WpAscentATop, WpLanding, WpStairsTop, WpCompoundEntrance, WpYardCentre
         };
 
         // --- Overlook shelf, 11 x 8 ----------------------------------------------
         const float OverlookXMin = 6f, OverlookXMax = 17f;
-        const float OverlookZMin = -20.6f, OverlookZMax = -12.2f;
+        const float OverlookZMin = -20.6f, OverlookZMax = -11.8f;
+
+        // --- Main Gate barrier, on the terrace's west edge ------------------------
+        public const float MainGateX = 8f;
+        const float MainGateOpenZMax = -16.1f;   // opening runs from the cliff lip north
 
         /// <summary>Where the traverse actually meets the overlook deck, flush.</summary>
-        public static readonly Vector3 OverlookDeckEdge = new Vector3(6.5f, TierOverlook, -19.3f);
-
-        /// <summary>Where ascent A actually meets the landing slab, flush.</summary>
-        public static readonly Vector3 LandingEdge = new Vector3(5f, TierLanding, -10.4f);
+        public static readonly Vector3 OverlookDeckEdge = new Vector3(6.5f, TierOverlook, -18f);
 
         static Material _rock, _cliff, _concrete, _wood, _metal, _plank, _ground, _water;
 
@@ -141,7 +142,7 @@ namespace LastBeacon.Editor
             var dock = NewGroup("Approach_00_Dock", root);
             var lower = NewGroup("Approach_01_LowerLeftAscent", root);
             var traverse = NewGroup("Approach_02_RisingTraverse", root);
-            var overlook = NewGroup("Approach_03_RightOverlook", root);
+            var overlook = NewGroup("Approach_03_MainGateTerrace", root);
             var ascent = NewGroup("Approach_04_FinalAscent", root);
             var compound = NewGroup("Tier3_MainCompound", root);
             var lighthouse = NewGroup("Tier4_Lighthouse", root);
@@ -153,7 +154,7 @@ namespace LastBeacon.Editor
             BuildDock(dock);
             BuildLowerLeftAscent(lower);
             BuildRisingTraverse(traverse);
-            BuildRightOverlook(overlook);
+            BuildMainGateTerrace(overlook);
             BuildFinalAscent(ascent);
             BuildCompound(compound);
             BuildLighthouse(lighthouse);
@@ -199,9 +200,19 @@ namespace LastBeacon.Editor
             Slab("Cliff_LowerWestBench", parent, -24f, -10f, -30f, -22f, -2f, TierLowerAscent, _cliff);
             // Matches the deck footprint. At x 6 / z -22 it protruded into the
             // traverse corridor and buried the last 4 m of the climb.
-            Slab("Cliff_OverlookBench", parent, OverlookXMin, 22f, OverlookZMin, -10f, -2f, TierOverlook, _cliff);
+            Slab("Cliff_OverlookBench", parent, OverlookXMin, OverlookXMax, -21f, -10f, -2f, TierOverlook, _cliff);
+            // The terrace was a painted slab on a 16 x 10.6 bench; these bound it to
+            // its real 11 x 8.8 footprint. The north-west corner is left open as the
+            // exit throat to Ascent A.
+            Slab("Rock_TerraceEast", parent, OverlookXMax, 22f, -21f, -10f, -2f, 13f, _rock);
+            Slab("Rock_TerraceNorth", parent, 14.5f, OverlookXMax, OverlookZMax, -10f,
+                TierOverlook, TierOverlook + 2.2f, _rock);
+            // Seals the strip behind the electric fence so the gate is the only way in.
+            Slab("Rock_MainGateInfill", parent, OverlookXMin, 7.5f, -14.1f, OverlookZMax,
+                TierOverlook, TierOverlook + 3f, _rock);
             // Matches the landing footprint; at x 7 it buried the top of ascent A.
-            Slab("Cliff_LandingBench", parent, -2.5f, 5.5f, -12f, -6.5f, -2f, TierLanding, _cliff);
+            Slab("Cliff_LandingBench", parent, -2.5f, 6f, -12f, -6.5f, -2f, TierLanding, _cliff);
+            Slab("Cliff_LandingLipBench", parent, 6f, 7.2f, -10f, -6.5f, -2f, TierLanding, _cliff);
             Slab("Cliff_CompoundPlateau", parent,
                 -IslandHalfWidth, IslandHalfWidth, CompoundSouth, CompoundNorth, -2f, TierCompound, _cliff);
 
@@ -334,46 +345,116 @@ namespace LastBeacon.Editor
 
         // ----------------------------------------------------- 03 — right overlook
 
-        static void BuildRightOverlook(Transform parent)
+        /// <summary>
+        /// The MAIN GATE terrace: the controlled chokepoint between the lower island
+        /// and the upper station, and the first major defensive fallback.
+        ///
+        /// 11 x 8.8 m. Bounded west by the gate and electric fence, south by the
+        /// cliff and its short overlook fence, east and north-east by rock. The
+        /// north-west corner stays open as the exit throat to Ascent A.
+        ///
+        /// Defences are NOT team-safe by design: the electric fence and shock trap
+        /// can injure players and legitimate NPCs. The layout therefore keeps the
+        /// gate opening, the control console and the through-route mutually visible,
+        /// so a player can read the defence state, make it safe, walk a sailor
+        /// through, and re-arm. Inspection itself stays at the dock.
+        /// </summary>
+        static void BuildMainGateTerrace(Transform parent)
         {
-            // 11 x 8 shelf. A widened cliff path with a fence, not an arena.
-            Slab("Overlook_Deck", parent, OverlookXMin, OverlookXMax, OverlookZMin, OverlookZMax,
+            Slab("Terrace_Deck", parent, OverlookXMin, OverlookXMax, OverlookZMin, OverlookZMax,
                 TierOverlook, TierOverlook + 0.04f, _ground);
 
-            // Short fence on the exposed south and east lips — the drop to the dock.
+            // --- Main Gate. 4.5 m opening; the cliff lip forms the south jamb. ----
+            var gate = NewGroup("MainGate", parent);
+            // Posts placed so the CLEAR gap is 4.5 m: z -19.6 to -15.1.
+            Cube("MainGate_Post_South", gate,
+                new Vector3(MainGateX, TierOverlook + 2f, -20.1f),
+                new Vector3(0.9f, 4f, 1f), _concrete);
+            Cube("MainGate_Post_North", gate,
+                new Vector3(MainGateX, TierOverlook + 2f, -14.6f),
+                new Vector3(0.9f, 4f, 1f), _concrete);
+            Cube("MainGate_Lintel", gate,
+                new Vector3(MainGateX, TierOverlook + 4.2f, -17.35f),
+                new Vector3(1f, 0.4f, 6.5f), _metal);
+            // Leaf modelled OPEN, folded back along the inside of the barrier. A
+            // closed leaf is a solid collider across the only way through.
+            Cube("MainGate_Leaf", gate,
+                new Vector3(MainGateX + 0.45f, TierOverlook + 1.3f, -13.6f),
+                new Vector3(0.2f, 2.6f, 3f), _metal);
+            Cube("MainGate_LampPost", gate, new Vector3(10.4f, TierOverlook + 1.8f, -19.8f),
+                new Vector3(0.2f, 3.6f, 0.2f), _metal);
+            Cube("MainGate_LampHead", gate, new Vector3(10.4f, TierOverlook + 3.7f, -19.8f),
+                new Vector3(0.5f, 0.4f, 0.5f), _metal);
+
+            // --- Electric fence, continuing the barrier line north ----------------
+            var fence = NewGroup("ElectricFence", parent);
+            for (int i = 0; i < 3; i++)
+                Cube($"ElectricFence_Post_{i}", fence,
+                    new Vector3(MainGateX, TierOverlook + 1f, -14f + i * 0.85f),
+                    new Vector3(0.2f, 2f, 0.2f), _metal);
+            Cube("ElectricFence_Rail_Lower", fence,
+                new Vector3(MainGateX, TierOverlook + 1.4f, -13.15f),
+                new Vector3(0.22f, 0.12f, 2f), _metal);
+            Cube("ElectricFence_Rail_Upper", fence,
+                new Vector3(MainGateX, TierOverlook + 2f, -13.15f),
+                new Vector3(0.22f, 0.12f, 2f), _metal);
+            // Obvious power connection: box at the fence's inboard end, conduit run
+            // overhead to the console. Conduit sits 2.4 m up, clear of a 1.8 m player.
+            Cube("ElectricFence_PowerBox", fence,
+                new Vector3(7.8f, TierOverlook + 0.9f, -13.6f),
+                new Vector3(0.7f, 1.4f, 0.5f), _metal);
+            Cube("ElectricFence_Conduit", fence,
+                new Vector3(12.4f, TierOverlook + 4f, -12.3f),
+                new Vector3(7.8f, 0.14f, 0.14f), _metal);
+
+            // --- Short overlook fence on the south lip ----------------------------
+            // Cannot extend west of x 12: at x 10 the entry path's southern edge
+            // reaches z -20.2 and the rail becomes a traversal blocker.
+            var overlook = NewGroup("SouthOverlookFence", parent);
             for (int i = 0; i < 6; i++)
-            {
-                float x = 12f + i * 1f;
-                Cube($"Overlook_FencePost_S_{i}", parent,
-                    new Vector3(x, TierOverlook + 0.6f, OverlookZMin + 0.3f),
+                Cube($"Overlook_FencePost_S_{i}", overlook,
+                    new Vector3(12f + i * 1f, TierOverlook + 0.6f, OverlookZMin + 0.3f),
                     new Vector3(0.22f, 1.2f, 0.22f), _wood);
-            }
-            Cube("Overlook_FenceRail_S", parent,
+            Cube("Overlook_FenceRail_S", overlook,
                 new Vector3(14.5f, TierOverlook + 1.05f, OverlookZMin + 0.3f),
                 new Vector3(5f, 0.15f, 0.18f), _wood);
 
-            for (int i = 0; i < 4; i++)
-            {
-                float z = OverlookZMin + 1.2f + i * 2f;
-                Cube($"Overlook_FencePost_E_{i}", parent,
-                    new Vector3(OverlookXMax - 0.3f, TierOverlook + 0.6f, z),
-                    new Vector3(0.22f, 1.2f, 0.22f), _wood);
-            }
-            Cube("Overlook_FenceRail_E", parent,
-                new Vector3(OverlookXMax - 0.3f, TierOverlook + 1.05f, -16.6f),
-                new Vector3(0.18f, 0.15f, 7f), _wood);
+            // --- Emergency defence / light sub-control ----------------------------
+            // Waist-high console, deliberately NOT a tall wall panel: the operator
+            // has to keep the gate and the lower approach in view while using it.
+            // This is not the lighthouse control system; that stays in operations.
+            var control = NewGroup("DefenceControl", parent);
+            Cube("Control_ConsoleBody", control,
+                new Vector3(16.3f, TierOverlook + 0.5f, -14.6f), new Vector3(1.2f, 1f, 0.8f), _metal);
+            Cube("Control_ConsoleFace", control,
+                new Vector3(16.1f, TierOverlook + 1.05f, -14.6f), new Vector3(0.9f, 0.1f, 0.7f), _plank);
+            Cube("Control_Lever", control,
+                new Vector3(15.95f, TierOverlook + 1.45f, -15.1f), new Vector3(0.12f, 0.9f, 0.12f), _metal);
+            for (int i = 0; i < 3; i++)
+                Cube($"Control_Gauge_{i}", control,
+                    new Vector3(16.15f, TierOverlook + 1.12f, -15f + i * 0.45f),
+                    new Vector3(0.36f, 0.06f, 0.36f), _plank);
 
-            Cube("Overlook_LampPost", parent, new Vector3(7.2f, TierOverlook + 1.6f, -13.5f),
-                new Vector3(0.2f, 3.2f, 0.2f), _metal);
-            Cube("Overlook_LampHead", parent, new Vector3(7.2f, TierOverlook + 3.3f, -13.5f),
-                new Vector3(0.5f, 0.4f, 0.5f), _metal);
+            // Indicator mast set to the side, so it never stands in the westward view.
+            // StatusBoard is the reserved face for ELECTRIC FENCE / SHOCK TRAP /
+            // GATE / POWER state signage. No UI yet, just the physical location.
+            Cube("Control_IndicatorMast", control,
+                new Vector3(16.8f, TierOverlook + 1.6f, -16.2f), new Vector3(0.25f, 3.2f, 0.25f), _metal);
+            Cube("Control_StatusBoard", control,
+                new Vector3(16.65f, TierOverlook + 2.4f, -16.2f), new Vector3(0.12f, 1.2f, 1.6f), _plank);
+            Cube("Control_WarningLight", control,
+                new Vector3(16.8f, TierOverlook + 3.35f, -16.2f), new Vector3(0.45f, 0.45f, 0.45f), _metal);
 
-            Cube("Overlook_Crate_A", parent, new Vector3(15f, TierOverlook + 0.7f, -13.2f),
-                new Vector3(1.3f, 1.4f, 1.3f), _plank);
-            Cube("Overlook_Crate_B", parent, new Vector3(15.4f, TierOverlook + 0.7f, -14f),
-                new Vector3(1.3f, 1.4f, 1.3f), _plank);
-            Cube("Overlook_Crate_C", parent, new Vector3(15f, TierOverlook + 2.1f, -13.2f),
-                new Vector3(1.3f, 1.4f, 1.3f), _plank);
+            // --- Trap bench, north-east, clear of the diagonal through-route ------
+            var bench = NewGroup("TrapBench", parent);
+            Cube("TrapBench_Top", bench,
+                new Vector3(15.7f, TierOverlook + 0.5f, -12.3f), new Vector3(2.6f, 1f, 0.9f), _plank);
+            Cube("TrapBench_ToolRack", bench,
+                new Vector3(15.7f, TierOverlook + 1.4f, -11.9f), new Vector3(2.4f, 1.6f, 0.25f), _plank);
+            Cube("TrapBench_Crate_A", bench,
+                new Vector3(16.3f, TierOverlook + 0.7f, -19.9f), new Vector3(1.3f, 1.4f, 1.3f), _plank);
+            Cube("TrapBench_Crate_B", bench,
+                new Vector3(16.3f, TierOverlook + 2.1f, -19.9f), new Vector3(1.3f, 1.4f, 1.3f), _plank);
         }
 
         // ------------------------------------------------------- 04 — final ascent
@@ -382,10 +463,14 @@ namespace LastBeacon.Editor
         {
             // Four beats, turning LEFT. Deliberately not one monumental staircase.
             // Tops out at the landing's east edge rather than inside it.
-            Ramp("Path_AscentA_ShortRise", parent, WpOverlookExit, LandingEdge, 4f, _ground);
-            Shoulder("Cliff_AscentAShoulder", parent, WpOverlookExit, LandingEdge, 6f, 10f);
+            // Launches off the terrace's north lip. The previous NW-corner launch
+            // cleared the rock by 0.31 m; this clears it by ~1.9 m.
+            Ramp("Path_AscentA_ShortRise", parent, WpOverlookExit, WpAscentATop, 4f, _ground);
+            Shoulder("Cliff_AscentAShoulder", parent, WpOverlookExit, WpAscentATop, 6f, 10f);
 
-            Slab("Ascent_Landing", parent, -2.5f, 5.5f, -12f, -6.5f,
+            Slab("Ascent_Landing", parent, -2.5f, 6f, -12f, -6.5f,
+                TierLanding, TierLanding + 0.04f, _ground);
+            Slab("Ascent_LandingLip", parent, 6f, 7.2f, -10f, -6.5f,
                 TierLanding, TierLanding + 0.04f, _ground);
 
             // Chunky broad stairs, short run. The surrounding cliff carries the scale.
@@ -401,19 +486,19 @@ namespace LastBeacon.Editor
             Cube("Ascent_Retain_West", parent, new Vector3(-8.6f, 14f, -3.5f),
                 new Vector3(0.5f, 5f, 9f), _concrete);
             // Moved clear of the landing slab, which it used to stand on top of.
-            Cube("Ascent_Retain_East", parent, new Vector3(6.2f, 13f, -3f),
+            Cube("Ascent_Retain_East", parent, new Vector3(7.6f, 13f, -3f),
                 new Vector3(0.5f, 4f, 7f), _concrete);
 
-            // The compound gate now sits at the entrance, its old terrace having gone.
-            var gate = NewGroup("MainGate", parent);
-            Cube("GatePost_West", gate, new Vector3(-8.6f, TierCompound + 2f, CompoundSouth),
-                new Vector3(0.8f, 4f, 1f), _concrete);
-            Cube("GatePost_East", gate, new Vector3(-3.4f, TierCompound + 2f, CompoundSouth),
-                new Vector3(0.8f, 4f, 1f), _concrete);
-            Cube("GateLintel", gate, new Vector3(-6f, TierCompound + 4.2f, CompoundSouth),
-                new Vector3(6.1f, 0.4f, 0.8f), _metal);
-            var leaf = Cube("GateLeaf", gate, new Vector3(-8.7f, TierCompound + 1.3f, CompoundSouth + 2.2f),
-                new Vector3(GateOpening - 0.2f, 2.6f, 0.2f), _metal);
+            // INNER GATE — a simple secondary containment barrier for the upper
+            // compound. Deliberately lighter than the Main Gate: shorter posts, no
+            // lintel, and no defensive control system of its own.
+            var gate = NewGroup("InnerGate", parent);
+            Cube("InnerGate_Post_West", gate, new Vector3(-8.6f, TierCompound + 1.6f, CompoundSouth),
+                new Vector3(0.6f, 3.2f, 0.7f), _concrete);
+            Cube("InnerGate_Post_East", gate, new Vector3(-3.4f, TierCompound + 1.6f, CompoundSouth),
+                new Vector3(0.6f, 3.2f, 0.7f), _concrete);
+            var leaf = Cube("InnerGate_Leaf", gate, new Vector3(-8.7f, TierCompound + 1.1f, CompoundSouth + 2.2f),
+                new Vector3(GateOpening - 0.2f, 2.2f, 0.15f), _metal);
             leaf.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
         }
 
@@ -526,14 +611,36 @@ namespace LastBeacon.Editor
             Marker(parent, "Medical_Storage", new Vector3(12.6f, TierCompound + 1.7f, 18f), task,
                 "Medical cabinet, Keeper's House.");
 
-            Marker(parent, "MainGate_InspectionPoint", new Vector3(-6f, TierCompound + 1.0f, 3.6f),
-                BlockoutMarker.MarkerKind.Inspection, "Visitors questioned at the compound gate.");
-            Marker(parent, "MainGate_BarricadeSocket", new Vector3(-6f, TierCompound + 0.2f, CompoundSouth), defense,
-                "Barricade socket in the gate opening.");
-            Marker(parent, "MainGate_TrapSocket", new Vector3(-5.4f, 16.2f, -0.6f), defense,
-                "Shock trap on the final rise below the gate.");
-            Marker(parent, "Overlook_TrapSocket", new Vector3(10.5f, TierOverlook + 0.2f, -18.5f), defense,
-                "Shock trap on the overlook entry throat.");
+            // Inspection happens at the DOCK. The Main Gate is the controlled
+            // passage a visitor uses only after players decide to admit them.
+            Marker(parent, "Dock_InspectionPoint", new Vector3(2f, TierDock + 1.0f, -40f),
+                BlockoutMarker.MarkerKind.Inspection,
+                "Inspect sailors and crates here, before anything climbs the path.");
+
+            // --- Main Gate terrace ------------------------------------------------
+            Marker(parent, "MainGate_BarricadeSocket", new Vector3(MainGateX, TierOverlook + 0.2f, -17.35f),
+                defense, "Primary barricade, in the Main Gate opening.");
+            Marker(parent, "MainGate_TrapSocket", new Vector3(6.8f, TierOverlook + 0.2f, -18.2f), defense,
+                "Shock trap OUTSIDE the gate. Not team-safe - disarm before admitting anyone.");
+            Marker(parent, "MainGate_ControlStand", new Vector3(15f, TierOverlook + 0.2f, -14.6f), control,
+                "Operate defences from here. Gate and lower approach stay in view.");
+            Marker(parent, "MainGate_SafePassageLane", new Vector3(11f, TierOverlook + 0.2f, -17.3f),
+                BlockoutMarker.MarkerKind.Landmark,
+                "Lane a legitimate NPC walks once defences are made safe.");
+
+            // Reserved physical locations for defence-state signage (no UI yet).
+            Marker(parent, "Indicator_ElectricFence", new Vector3(8.5f, TierOverlook + 1.8f, -12.4f), control,
+                "ELECTRIC FENCE: ARMED / SAFE");
+            Marker(parent, "Indicator_ShockTrap", new Vector3(16.6f, TierOverlook + 2.9f, -16.2f), control,
+                "SHOCK TRAP: ARMED / SAFE");
+            Marker(parent, "Indicator_GateState", new Vector3(8.6f, TierOverlook + 3.2f, -14.6f), control,
+                "GATE: OPEN / CLOSED");
+            Marker(parent, "Indicator_Power", new Vector3(16.6f, TierOverlook + 2.1f, -16.2f), control,
+                "POWER: ON / OFF");
+
+            // --- Inner gate, upper compound ---------------------------------------
+            Marker(parent, "InnerGate_BarricadeSocket", new Vector3(-6f, TierCompound + 0.2f, CompoundSouth),
+                defense, "Secondary containment barrier. No control system of its own.");
 
             Marker(parent, "ShiftBell_Point", new Vector3(3f, TierCompound + 1.4f, 24f), control,
                 "Ring to end the shift (GDD 15).");
@@ -546,8 +653,10 @@ namespace LastBeacon.Editor
                 BlockoutMarker.MarkerKind.Landmark, "Main Yard 16 x 14. Keep clear for sightlines.");
             Marker(parent, "Spawn_Player", new Vector3(0f, TierDock + 0.6f, -46f),
                 BlockoutMarker.MarkerKind.SpawnPoint, "Blockout walk starts at the dock.");
-            Marker(parent, "Entrance_MainGate", WpCompoundEntrance + Vector3.up * 0.2f,
-                BlockoutMarker.MarkerKind.Entrance, "Primary enemy approach, top of the serpentine.");
+            Marker(parent, "Entrance_InnerGate", WpCompoundEntrance + Vector3.up * 0.2f,
+                BlockoutMarker.MarkerKind.Entrance, "Inner gate into the upper compound.");
+            Marker(parent, "Entrance_MainGate", new Vector3(MainGateX, TierOverlook + 0.2f, -17.35f),
+                BlockoutMarker.MarkerKind.Entrance, "Primary controlled chokepoint.");
             Marker(parent, "Task_DockDelivery", new Vector3(4.2f, TierDock + 0.9f, -39f), task,
                 "Supply drop-off. Carry loop starts here.");
             Marker(parent, "Overlook_FenceLookout", WpFenceLookout + Vector3.up * 0.2f,
@@ -576,6 +685,10 @@ namespace LastBeacon.Editor
             ("CAM_LowerLeft",     new Vector3(-14f, TierLowerAscent + EyeHeight, -28f),    LanternCentre),
             ("CAM_RightTraverse", new Vector3(0f, 6.5f + EyeHeight, -22f),                 LanternCentre),
             ("CAM_Overlook",      new Vector3(15.5f, TierOverlook + EyeHeight, -17.5f),    LanternCentre),
+            ("CAM_MainGate",      new Vector3(11.5f, TierOverlook + EyeHeight, -17.3f),
+                new Vector3(MainGateX, TierOverlook + 1.5f, -17.35f)),
+            ("CAM_TerraceControl", new Vector3(15f, TierOverlook + EyeHeight, -14.6f),
+                new Vector3(MainGateX, TierOverlook + 1.5f, -17.35f)),
             ("CAM_FinalAscent",   new Vector3(0f, TierLanding + EyeHeight, -7.5f),         LanternCentre),
             ("CAM_CompoundEntry", new Vector3(-6f, TierCompound + EyeHeight, 2f),          LanternCentre)
         };
@@ -622,7 +735,8 @@ namespace LastBeacon.Editor
             WarmLamp(group, "Lamp_Dock", new Vector3(0f, 3.4f, -42f), 20f, 6f);
             WarmLamp(group, "Lamp_LowerLeft", new Vector3(-14f, 7f, -28f), 18f, 6f);
             WarmLamp(group, "Lamp_Traverse", new Vector3(0f, 9.5f, -22f), 18f, 6f);
-            WarmLamp(group, "Lamp_Overlook", new Vector3(11f, 12f, -16f), 20f, 7f);
+            WarmLamp(group, "Lamp_MainGate", new Vector3(10.4f, 12.7f, -19.8f), 22f, 8f);
+            WarmLamp(group, "Lamp_TerraceControl", new Vector3(16.3f, 12f, -15.4f), 14f, 5f);
             WarmLamp(group, "Lamp_AscentLanding", new Vector3(1.5f, 14.5f, -8.5f), 16f, 6f);
             WarmLamp(group, "Lamp_CompoundGate", new Vector3(-6f, 20f, 2f), 20f, 8f);
 

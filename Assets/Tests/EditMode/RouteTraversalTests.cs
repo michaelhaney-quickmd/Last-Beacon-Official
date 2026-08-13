@@ -61,7 +61,18 @@ namespace LastBeacon.Tests
         {
             // Probe from well above the expected surface so overhangs are caught.
             var origin = new Vector3(point.x, expectedY + 3f, point.z);
-            return Physics.Raycast(origin, Vector3.down, out var hit, 8f) ? hit.point.y : (float?)null;
+            // Take the highest surface within the walkable band. Anything above head
+            // height is an overhead run, not the floor.
+            float ceiling = expectedY + 1.2f;
+            float? best = null;
+            foreach (var hit in Physics.RaycastAll(origin, Vector3.down, 8f))
+            {
+                if (hit.point.y > ceiling)
+                    continue;
+                if (best == null || hit.point.y > best.Value)
+                    best = hit.point.y;
+            }
+            return best;
         }
 
         static IEnumerable<(int Segment, float T, Vector3 Centre)> Samples()
@@ -228,7 +239,7 @@ namespace LastBeacon.Tests
                 ("lower-left ascent", Gen.WpIntroTop, Gen.WpLowerLeftTop),
                 ("traverse leg 1", Gen.WpLowerLeftTop, Gen.WpTraverseMid),
                 ("traverse leg 2", Gen.WpTraverseMid, Gen.OverlookDeckEdge),
-                ("ascent A", Gen.WpOverlookExit, Gen.LandingEdge),
+                ("ascent A", Gen.WpOverlookExit, Gen.WpAscentATop),
                 ("final rise", Gen.WpStairsTop, Gen.WpCompoundEntrance)
             };
 
