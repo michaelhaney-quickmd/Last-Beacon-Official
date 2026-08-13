@@ -18,7 +18,7 @@ namespace LastBeacon.Editor
     /// </summary>
     public static class BlockoutPreviewCapture
     {
-        const string ScenePath = "Assets/_Project/Scenes/Compound_Blockout.unity";
+        const string ScenePath = "Assets/_Project/Scenes/Island_Blockout.unity";
         const int Width = 1600;
         const int Height = 900;
 
@@ -40,54 +40,68 @@ namespace LastBeacon.Editor
         {
             new Shot
             {
-                Name = "01_compound_aerial",
-                Position = new Vector3(52f, 58f, -68f),
-                LookAt = new Vector3(-4f, 2f, 2f),
+                Name = "01_island_aerial",
+                Position = new Vector3(58f, 46f, -78f),
+                LookAt = new Vector3(-4f, 16f, 8f),
                 FieldOfView = 55f,
                 LayoutLighting = true
             },
             new Shot
             {
-                Name = "01b_compound_aerial_night",
-                Position = new Vector3(52f, 58f, -68f),
-                LookAt = new Vector3(-4f, 2f, 2f),
+                Name = "01b_island_aerial_night",
+                Position = new Vector3(58f, 46f, -78f),
+                LookAt = new Vector3(-4f, 16f, 8f),
                 FieldOfView = 55f
             },
             new Shot
             {
-                Name = "01c_compound_plan",
-                Position = new Vector3(0f, 96f, -14f),
-                LookAt = new Vector3(0f, 0f, -14f),
-                FieldOfView = 60f,
+                Name = "02_side_elevation",
+                Position = new Vector3(96f, 26f, -14f),
+                LookAt = new Vector3(0f, 20f, 4f),
+                FieldOfView = 45f,
                 LayoutLighting = true
             },
             new Shot
             {
-                Name = "02_courtyard_eye_level",
-                Position = new Vector3(2f, 1.7f, -12f),
-                LookAt = new Vector3(-13f, 10f, 16f),
+                Name = "03_CAM_DockToLighthouse",
+                Position = new Vector3(0f, 2.1f, -52f),
+                LookAt = new Vector3(0f, 32.6f, 38f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "03_gate_approach",
-                Position = new Vector3(0f, 1.7f, -38f),
-                LookAt = new Vector3(0f, 6f, 4f),
+                Name = "04_CAM_LowerPathToLighthouse",
+                Position = new Vector3(-4f, 6.7f, -33f),
+                LookAt = new Vector3(0f, 32.6f, 38f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "04_from_the_dock",
-                Position = new Vector3(0f, 1.7f, -72f),
-                LookAt = new Vector3(-12f, 14f, 12f),
+                Name = "05_CAM_GateToLighthouse",
+                Position = new Vector3(0f, 12.7f, -5.8f),
+                LookAt = new Vector3(0f, 34f, 38f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "05_lighthouse_and_shed",
-                Position = new Vector3(24f, 3.5f, -20f),
-                LookAt = new Vector3(-14f, 12f, 14f),
-                FieldOfView = 65f
+                Name = "06_CAM_MainYard",
+                Position = new Vector3(0f, 18.7f, 12f),
+                LookAt = new Vector3(0f, 34f, 38f),
+                FieldOfView = 70f
+            },
+            new Shot
+            {
+                Name = "07_CAM_GeneratorCourtyard",
+                Position = new Vector3(-12f, 18.7f, 15.5f),
+                LookAt = new Vector3(0f, 32.6f, 38f),
+                FieldOfView = 70f
+            },
+            new Shot
+            {
+                Name = "08_CAM_LighthouseLookingDown",
+                Position = new Vector3(0f, 23.7f, 33f),
+                LookAt = new Vector3(0f, 17f, 0f),
+                FieldOfView = 70f
             }
         };
 

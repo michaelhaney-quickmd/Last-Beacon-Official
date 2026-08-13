@@ -4,6 +4,7 @@
     "references": [
         "LastBeacon.Runtime",
         "LastBeacon.Editor",
+        "Unity.ProBuilder",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
