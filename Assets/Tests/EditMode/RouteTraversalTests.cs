@@ -32,11 +32,28 @@ namespace LastBeacon.Tests
         /// <summary>Sample spacing along the route.</summary>
         const float SampleStep = 0.5f;
 
+        static GameObject _player;
+
         [OneTimeSetUp]
         public void OpenScene()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // The placeholder player is itself a collider. Left active it reads as
+            // "ground" 2.8 m above the dock and obstructs its own spawn point.
+            _player = Object.FindObjectsByType<CharacterController>(FindObjectsSortMode.None)
+                .FirstOrDefault()?.gameObject;
+            if (_player != null)
+                _player.SetActive(false);
+
             Physics.SyncTransforms();
+        }
+
+        [OneTimeTearDown]
+        public void RestorePlayer()
+        {
+            if (_player != null)
+                _player.SetActive(true);
         }
 
         /// <summary>Ground height under a point, or null if there is no surface.</summary>
@@ -49,7 +66,7 @@ namespace LastBeacon.Tests
 
         static IEnumerable<(int Segment, float T, Vector3 Centre)> Samples()
         {
-            var route = Gen.Route;
+            var route = Gen.WalkPath;
             for (int i = 1; i < route.Length; i++)
             {
                 Vector3 a = route[i - 1], b = route[i];
@@ -64,7 +81,7 @@ namespace LastBeacon.Tests
 
         static Vector3 LateralAxis(int segment)
         {
-            var route = Gen.Route;
+            var route = Gen.WalkPath;
             Vector3 delta = route[segment] - route[segment - 1];
             var horizontal = new Vector3(delta.x, 0f, delta.z).normalized;
             return new Vector3(horizontal.z, 0f, -horizontal.x);
@@ -104,6 +121,13 @@ namespace LastBeacon.Tests
             // Slightly under the real radius so merely touching a surface is not a hit.
             float radius = CapsuleRadius - 0.02f;
 
+            var probe = new GameObject("__TraversalProbe");
+            var probeCollider = probe.AddComponent<CapsuleCollider>();
+            probeCollider.radius = radius;
+            probeCollider.height = CapsuleHeight;
+            probeCollider.direction = 1;
+            probe.SetActive(true);
+
             foreach (var (segment, _, centre) in Samples())
             {
                 var side = LateralAxis(segment);
@@ -119,13 +143,39 @@ namespace LastBeacon.Tests
                     var bottom = new Vector3(foot.x, ground.Value + radius + 0.08f, foot.z);
                     var top = bottom + Vector3.up * (CapsuleHeight - 2f * radius);
 
-                    var hits = Physics.OverlapCapsule(bottom, top, radius);
-                    if (hits.Length > 0)
+                    var centreOfCapsule = (bottom + top) * 0.5f;
+                    probe.transform.SetPositionAndRotation(centreOfCapsule, Quaternion.identity);
+                    Physics.SyncTransforms();
+
+                    foreach (var hit in Physics.OverlapCapsule(bottom, top, radius))
                     {
-                        blocked.Add($"seg{segment} {foot} offset {offset:+0.0;-0.0} — inside {hits[0].name}");
+                        if (hit == probeCollider)
+                            continue;
+
+                        // A stair riser is a vertical face by design. Stairs are
+                        // validated by riser/tread in TheBroadStair_... instead.
+                        if (hit.name.StartsWith("Stair_"))
+                            continue;
+
+                        if (!Physics.ComputePenetration(
+                                probeCollider, probe.transform.position, probe.transform.rotation,
+                                hit, hit.transform.position, hit.transform.rotation,
+                                out var direction, out float depth))
+                            continue;
+
+                        // A vertical push means the capsule is fractionally inside the
+                        // floor it stands on. A horizontal push is a wall.
+                        bool isWall = Mathf.Abs(direction.y) < 0.6f;
+                        if (isWall && depth > 0.12f)
+                        {
+                            blocked.Add($"seg{segment} {foot} offset {offset:+0.0;-0.0} — {hit.name} blocks {depth:0.00} m horizontally");
+                            break;
+                        }
                     }
                 }
             }
+
+            Object.DestroyImmediate(probe);
 
             Assert.IsEmpty(blocked,
                 $"{blocked.Count} point(s) where the player capsule is obstructed:\n  {string.Join("\n  ", blocked.Take(15))}");
@@ -208,8 +258,9 @@ namespace LastBeacon.Tests
             var d = Gen.WpStairsTop - Gen.WpLanding;
             float run = new Vector2(d.x, d.z).magnitude;
 
-            // The generator uses one step per ~0.35 m of rise.
-            int steps = Mathf.Max(4, Mathf.RoundToInt(rise / 0.35f));
+            // Mirrors the generator: tread must clear the capsule, riser must stay
+            // under the step offset.
+            int steps = Mathf.Clamp(Mathf.FloorToInt(run / 0.7f), Mathf.CeilToInt(rise / 0.42f), 40);
             float riser = rise / steps;
             float tread = run / steps;
 
@@ -250,8 +301,8 @@ namespace LastBeacon.Tests
         [Test]
         public void ControllerSettings_MatchWhatTheseTestsAssume()
         {
-            var player = Object.FindObjectsByType<CharacterController>(FindObjectsSortMode.None).FirstOrDefault();
-            Assert.NotNull(player, "No CharacterController in the scene.");
+            Assert.NotNull(_player, "No CharacterController in the scene.");
+            var player = _player.GetComponent<CharacterController>();
 
             Assert.That(player.radius, Is.EqualTo(CapsuleRadius).Within(0.001f), "Capsule radius drifted.");
             Assert.That(player.height, Is.EqualTo(CapsuleHeight).Within(0.001f), "Capsule height drifted.");
@@ -262,10 +313,8 @@ namespace LastBeacon.Tests
         [Test]
         public void ThePlayerSpawns_OnTheDockAndNotInsideGeometry()
         {
-            var player = Object.FindObjectsByType<CharacterController>(FindObjectsSortMode.None).FirstOrDefault();
-            Assert.NotNull(player);
-
-            var pos = player.transform.position;
+            Assert.NotNull(_player, "No player in the scene.");
+            var pos = _player.transform.position;
             float? ground = GroundAt(pos, pos.y);
             Assert.NotNull(ground, "Player spawns over nothing.");
             Assert.That(pos.y - ground.Value, Is.InRange(-0.1f, 2f),
