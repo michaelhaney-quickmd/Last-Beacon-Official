@@ -79,8 +79,10 @@ namespace LastBeacon.Editor
 
         // --- Approved route waypoints -------------------------------------------
         public static readonly Vector3 WpJettyEnd = new Vector3(0f, 0.4f, -48f);
-        public static readonly Vector3 WpShoreApron = new Vector3(0f, 0f, -41f);
-        public static readonly Vector3 WpRampBase = new Vector3(-4f, 0f, -40f);
+        public static readonly Vector3 WpShoreApron = new Vector3(0f, 0.4f, -41f);
+        public static readonly Vector3 WpRampBase = new Vector3(-4f, 0.4f, -40f);
+        /// <summary>Gentle introductory ramp so the steep ascent never starts at the dock edge.</summary>
+        public static readonly Vector3 WpIntroTop = new Vector3(-7f, 1.2f, -36f);
         public static readonly Vector3 WpLowerLeftTop = new Vector3(-14f, 4f, -28f);
         public static readonly Vector3 WpTraverseMid = new Vector3(0f, 6.5f, -22f);
         public static readonly Vector3 WpOverlookEntry = new Vector3(10f, 9f, -19f);
@@ -95,7 +97,7 @@ namespace LastBeacon.Editor
         /// <summary>The primary route, in order. Used for distance and timing.</summary>
         public static Vector3[] Route => new[]
         {
-            WpJettyEnd, WpShoreApron, WpRampBase, WpLowerLeftTop, WpTraverseMid,
+            WpJettyEnd, WpShoreApron, WpRampBase, WpIntroTop, WpLowerLeftTop, WpTraverseMid,
             WpOverlookEntry, WpFenceLookout, WpOverlookExit, WpAscentATop,
             WpLanding, WpStairsTop, WpCompoundEntrance, WpYardCentre
         };
@@ -103,6 +105,12 @@ namespace LastBeacon.Editor
         // --- Overlook shelf, 11 x 8 ----------------------------------------------
         const float OverlookXMin = 7.5f, OverlookXMax = 18.5f;
         const float OverlookZMin = -20f, OverlookZMax = -12f;
+
+        /// <summary>Where the traverse actually meets the overlook deck, flush.</summary>
+        public static readonly Vector3 OverlookDeckEdge = new Vector3(OverlookXMin, TierOverlook, -19.75f);
+
+        /// <summary>Where ascent A actually meets the landing slab, flush.</summary>
+        public static readonly Vector3 LandingEdge = new Vector3(5.5f, TierLanding, -9.8f);
 
         static Material _rock, _cliff, _concrete, _wood, _metal, _plank, _ground, _water;
 
@@ -171,9 +179,14 @@ namespace LastBeacon.Editor
             // Solid cores. These are buried support; every exposed face gets a
             // battered plane over it so nothing reads as a rectangular terrace wall.
             Slab("Cliff_ShorePlinth", parent, -20f, 20f, -44f, -34f, -2f, TierDock, _rock);
-            Slab("Cliff_LowerWestBench", parent, -24f, -6f, -36f, -22f, -2f, TierLowerAscent, _cliff);
-            Slab("Cliff_OverlookBench", parent, 6f, 22f, -22f, -10f, -2f, TierOverlook, _cliff);
-            Slab("Cliff_LandingBench", parent, -4f, 7f, -11f, -6f, -2f, TierLanding, _cliff);
+            // Only supports the pivot shelf, north of the ramp top. Its old extent
+            // (z -36..-22) swallowed the lower-left ramp for its whole upper half.
+            Slab("Cliff_LowerWestBench", parent, -24f, -10f, -28f, -22f, -2f, TierLowerAscent, _cliff);
+            // Matches the deck footprint. At x 6 / z -22 it protruded into the
+            // traverse corridor and buried the last 4 m of the climb.
+            Slab("Cliff_OverlookBench", parent, OverlookXMin, 22f, OverlookZMin, -10f, -2f, TierOverlook, _cliff);
+            // Matches the landing footprint; at x 7 it buried the top of ascent A.
+            Slab("Cliff_LandingBench", parent, -2.5f, 5.5f, -10.5f, -6.5f, -2f, TierLanding, _cliff);
             Slab("Cliff_CompoundPlateau", parent,
                 -IslandHalfWidth, IslandHalfWidth, CompoundSouth, CompoundNorth, -2f, TierCompound, _cliff);
 
@@ -195,8 +208,8 @@ namespace LastBeacon.Editor
 
             // Centre face the final ascent is carved into.
             BatteredFace("Cliff_CentreFace_Battered", parent,
-                new Vector3(0f, TierOverlook, -10f),
-                new Vector3(0f, TierCompound, CompoundSouth), 16f, _cliff);
+                new Vector3(0f, TierOverlook - 1f, -10f),
+                new Vector3(0f, TierCompound - 1f, CompoundSouth), 16f, _cliff);
 
             // Cliff below the overlook. Steep on purpose — this is the drop the
             // fence guards, and the wall you look down when you turn back.
@@ -236,7 +249,9 @@ namespace LastBeacon.Editor
 
         static void BuildDock(Transform parent)
         {
-            Slab("Dock_Apron", parent, -14f, 10f, -41f, -34f, -0.4f, TierDock, _ground);
+            // Apron top is flush with the dock deck at 0.4 - it used to sit 0.4 m
+            // lower, putting a lip right where the player steps off the jetty.
+            Slab("Dock_Apron", parent, -14f, 10f, -41f, -34f, -0.4f, 0.4f, _ground);
 
             Cube("Dock_Deck", parent, new Vector3(0f, 0.2f, -44.5f), new Vector3(5f, 0.4f, 7f), _plank);
             for (int i = 0; i < 4; i++)
@@ -263,10 +278,17 @@ namespace LastBeacon.Editor
         static void BuildLowerLeftAscent(Transform parent)
         {
             // Route breaks LEFT off the apron and climbs the west shoulder.
-            Ramp("Path_LowerLeftAscent", parent, WpRampBase, WpLowerLeftTop, 4.5f, _ground);
+            // Two segments: a gentle introductory ramp so the steep ascent never
+            // begins at the dock edge, then the main climb.
+            Ramp("Path_IntroRamp", parent, WpRampBase, WpIntroTop, 4.5f, _ground);
+            Shoulder("Cliff_IntroShoulder", parent, WpRampBase, WpIntroTop, 20f, 8f);
+
+            Ramp("Path_LowerLeftAscent", parent, WpIntroTop, WpLowerLeftTop, 4.5f, _ground);
+            Shoulder("Cliff_LowerLeftShoulder", parent, WpIntroTop, WpLowerLeftTop, 22f, 10f);
 
             // Small pivot shelf where the route turns from left-heading to right.
-            Slab("Shelf_LowerLeftPivot", parent, -18f, -10f, -32f, -24f,
+            // Pulled north of the ramp top: at its old extent it overhung the climb.
+            Slab("Shelf_LowerLeftPivot", parent, -18f, -10f, -28f, -22f,
                 TierLowerAscent, TierLowerAscent + 0.04f, _ground);
 
             Cube("LowerLeft_Kerb", parent, new Vector3(-14f, TierLowerAscent + 0.3f, -32.3f),
@@ -279,7 +301,12 @@ namespace LastBeacon.Editor
         {
             // Two legs sweeping RIGHT across the south face, climbing y4 -> y9.
             Ramp("Path_TraverseLeg1", parent, WpLowerLeftTop, WpTraverseMid, 4f, _ground);
-            Ramp("Path_TraverseLeg2", parent, WpTraverseMid, WpOverlookEntry, 4f, _ground);
+            Shoulder("Cliff_TraverseShoulder1", parent, WpLowerLeftTop, WpTraverseMid, 20f, 10f);
+
+            // Leg 2 tops out at the overlook's south-west deck edge rather than
+            // 2.5 m inside it, so it meets the shelf flush instead of tunnelling.
+            Ramp("Path_TraverseLeg2", parent, WpTraverseMid, OverlookDeckEdge, 4f, _ground);
+            Shoulder("Cliff_TraverseShoulder2", parent, WpTraverseMid, OverlookDeckEdge, 18f, 10f);
 
             // Retaining kerb on the seaward side only, where it is genuinely useful.
             // Kept low and offset: an eye-height kerb on the inside of the bend
@@ -337,7 +364,9 @@ namespace LastBeacon.Editor
         static void BuildFinalAscent(Transform parent)
         {
             // Four beats, turning LEFT. Deliberately not one monumental staircase.
-            Ramp("Path_AscentA_ShortRise", parent, WpOverlookExit, WpAscentATop, 4f, _ground);
+            // Tops out at the landing's east edge rather than inside it.
+            Ramp("Path_AscentA_ShortRise", parent, WpOverlookExit, LandingEdge, 4f, _ground);
+            Shoulder("Cliff_AscentAShoulder", parent, WpOverlookExit, LandingEdge, 14f, 10f);
 
             Slab("Ascent_Landing", parent, -2.5f, 5.5f, -10.5f, -6.5f,
                 TierLanding, TierLanding + 0.04f, _ground);
@@ -346,12 +375,14 @@ namespace LastBeacon.Editor
             Stair("Stair_AscentBroad", parent, WpLanding, WpStairsTop, 5f);
 
             Ramp("Path_AscentD_FinalRise", parent, WpStairsTop, WpCompoundEntrance, 4f, _ground);
+            Shoulder("Cliff_FinalRiseShoulder", parent, WpStairsTop, WpCompoundEntrance, 12f, 8f);
 
             // Retaining walls only where the cut genuinely needs holding back.
             Cube("Ascent_Retain_West", parent, new Vector3(-8.6f, 14f, -3.5f),
                 new Vector3(0.5f, 5f, 9f), _concrete);
-            Cube("Ascent_Retain_East", parent, new Vector3(3.2f, 13f, -3.5f),
-                new Vector3(0.5f, 4f, 8f), _concrete);
+            // Moved clear of the landing slab, which it used to stand on top of.
+            Cube("Ascent_Retain_East", parent, new Vector3(6.2f, 13f, -3f),
+                new Vector3(0.5f, 4f, 7f), _concrete);
 
             // The compound gate now sits at the entrance, its old terrace having gone.
             var gate = NewGroup("MainGate", parent);
@@ -734,6 +765,28 @@ namespace LastBeacon.Editor
             pb.transform.position = (from + to) / 2f;
             pb.transform.rotation = Quaternion.LookRotation(horizontal.normalized, Vector3.up);
             Finish(pb, _concrete);
+            return pb;
+        }
+
+        /// <summary>
+        /// Broad rock shoulder sitting flush beneath a path segment, so the path
+        /// never floats and the player cannot drop into a seam beside it.
+        /// </summary>
+        static ProBuilderMesh Shoulder(string name, Transform parent, Vector3 from, Vector3 to,
+            float width, float thickness)
+        {
+            Vector3 delta = to - from;
+            var rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+
+            var pb = ShapeGenerator.GenerateCube(PivotLocation.Center,
+                new Vector3(width, thickness, delta.magnitude));
+            pb.gameObject.name = name;
+            pb.transform.SetParent(parent, false);
+            // Ramp slabs are 0.4 thick centred on the line, so their top face sits
+            // 0.2 above it. Align the shoulder's top face to exactly that.
+            pb.transform.position = (from + to) / 2f + rotation * (Vector3.up * (0.2f - thickness / 2f));
+            pb.transform.rotation = rotation;
+            Finish(pb, _cliff);
             return pb;
         }
 
