@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.ProBuilder;
+using UnityEngine.ProBuilder.MeshOperations;
 using UnityEngine.Rendering;
 
 namespace LastBeacon.Editor
@@ -117,6 +118,8 @@ namespace LastBeacon.Editor
 
         // --- Overlook shelf, 11 x 8 ----------------------------------------------
         const float OverlookXMin = 6f, OverlookXMax = 17f;
+        /// <summary>West lip, set out to receive traverse leg 2's full width.</summary>
+        const float TerraceWestEdge = 5.452f;
         const float OverlookZMin = -20.6f, OverlookZMax = -11.8f;
 
         // --- Main Gate barrier, on the terrace's west edge ------------------------
@@ -204,7 +207,7 @@ namespace LastBeacon.Editor
             Slab("Cliff_LowerWestBench", parent, -24f, -10f, -30f, -22f, -2f, TierLowerAscent - 0.3f, _cliff);
             // Matches the deck footprint. At x 6 / z -22 it protruded into the
             // traverse corridor and buried the last 4 m of the climb.
-            Slab("Cliff_OverlookBench", parent, OverlookXMin, OverlookXMax, -21f, -10f, -2f, TierOverlook, _cliff);
+            Slab("Cliff_OverlookBench", parent, TerraceWestEdge, OverlookXMax, -21f, -10f, -2f, TierOverlook - 0.5f, _cliff);
             // The terrace was a painted slab on a 16 x 10.6 bench; these bound it to
             // its real 11 x 8.8 footprint. The north-west corner is left open as the
             // exit throat to Ascent A.
@@ -212,11 +215,9 @@ namespace LastBeacon.Editor
             Slab("Rock_TerraceNorth", parent, 14.5f, OverlookXMax, OverlookZMax, -10f,
                 TierOverlook, TierOverlook + 2.2f, _rock);
             // Seals the strip behind the electric fence so the gate is the only way in.
-            Slab("Rock_MainGateInfill", parent, OverlookXMin, 7.5f, -14.1f, OverlookZMax,
+            Slab("Rock_MainGateInfill", parent, TerraceWestEdge, 7.5f, -14.1f, OverlookZMax,
                 TierOverlook, TierOverlook + 3f, _rock);
             // Matches the landing footprint; at x 7 it buried the top of ascent A.
-            Slab("Cliff_LandingBench", parent, -2.5f, 6f, -12f, -6.5f, -2f, TierLanding, _cliff);
-            Slab("Cliff_LandingLipBench", parent, 6f, 7.2f, -10f, -6.5f, -2f, TierLanding, _cliff);
             Slab("Cliff_CompoundPlateau", parent,
                 -IslandHalfWidth, IslandHalfWidth, CompoundSouth, CompoundNorth, -2f, TierCompound, _cliff);
 
@@ -345,7 +346,7 @@ namespace LastBeacon.Editor
 
             // Leg 2 tops out at the overlook's south-west deck edge rather than
             // 2.5 m inside it, so it meets the shelf flush instead of tunnelling.
-            Ramp("Path_TraverseLeg2", parent, WpTraverseMid, OverlookDeckEdge, 4f, _ground);
+            Ramp("Path_TraverseLeg2", parent, WpTraverseMid, OverlookDeckEdge, 4f, _ground, surfaceOnLine: true);
             Shoulder("Cliff_TraverseShoulder2", parent, WpTraverseMid, OverlookDeckEdge, 6f, 10f);
 
             // Retaining kerb on the seaward side only, where it is genuinely useful.
@@ -373,8 +374,21 @@ namespace LastBeacon.Editor
         /// </summary>
         static void BuildMainGateTerrace(Transform parent)
         {
-            Slab("Terrace_Deck", parent, OverlookXMin, OverlookXMax, OverlookZMin, OverlookZMax,
-                TierOverlook, TierOverlook + 0.04f, _ground);
+            // The south-west corner is cut parallel to traverse leg 2's iso-height
+            // line, so the ramp meets the deck at one constant height across the
+            // whole seam instead of a step that varies by 0.6 m across its width.
+            PolygonDeck("Terrace_Deck", parent, new[]
+            {
+                new Vector2(TerraceWestEdge, -16.297f),
+                new Vector2(8.1f, OverlookZMin),
+                new Vector2(OverlookXMax, OverlookZMin),
+                new Vector2(OverlookXMax, OverlookZMax),
+                new Vector2(TerraceWestEdge, OverlookZMax)
+            }, TierOverlook + 0.04f, 0.5f, _ground);
+
+            // The exit throat, abutting the terrace at z -11.8 with a shared edge.
+            Slab("Terrace_Throat", parent, TerraceWestEdge, 13.5f, OverlookZMax, -10f,
+                TierOverlook - 0.46f, TierOverlook + 0.04f, _ground);
 
             // --- Main Gate. 4.5 m opening; the cliff lip forms the south jamb. ----
             var gate = NewGroup("MainGate", parent);
@@ -477,13 +491,19 @@ namespace LastBeacon.Editor
             // Tops out at the landing's east edge rather than inside it.
             // Launches off the terrace's north lip. The previous NW-corner launch
             // cleared the rock by 0.31 m; this clears it by ~1.9 m.
-            Ramp("Path_AscentA_ShortRise", parent, WpOverlookExit, WpAscentATop, 4f, _ground);
+            Ramp("Path_AscentA_ShortRise", parent, WpOverlookExit, WpAscentATop, 4f, _ground, surfaceOnLine: true);
             Shoulder("Cliff_AscentAShoulder", parent, WpOverlookExit, WpAscentATop, 6f, 10f);
 
-            Slab("Ascent_Landing", parent, -2.5f, 6f, -12f, -6.5f,
-                TierLanding, TierLanding + 0.04f, _ground);
-            Slab("Ascent_LandingLip", parent, 6f, 7.2f, -10f, -6.5f,
-                TierLanding, TierLanding + 0.04f, _ground);
+            // One landing, not a slab plus a lip: the south-east corner is cut
+            // parallel to ascent A's iso-height line so the ramp arrives flush.
+            PolygonDeck("Ascent_Landing", parent, new[]
+            {
+                new Vector2(-2.5f, -12f),
+                new Vector2(4.5f, -12f),
+                new Vector2(7.5f, -7.5f),
+                new Vector2(7.5f, -6.5f),
+                new Vector2(-2.5f, -6.5f)
+            }, TierLanding + 0.04f, 2.5f, _ground);
 
             // Chunky broad stairs, short run. The surrounding cliff carries the scale.
             Stair("Stair_AscentBroad", parent, WpLanding, WpStairsTop, 5f);
@@ -826,6 +846,44 @@ namespace LastBeacon.Editor
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             return go.transform;
+        }
+
+        /// <summary>
+        /// Convex polygon deck, extruded downward, built from explicit vertices.
+        /// Used where a receiving surface must present an angled edge to a diagonal
+        /// ramp: a straight edge meeting a diagonal ramp gives a step that varies
+        /// across the seam, while an edge cut parallel to the ramp's iso-height line
+        /// gives the same small step everywhere along it.
+        /// </summary>
+        static ProBuilderMesh PolygonDeck(string name, Transform parent, Vector2[] outline,
+            float topY, float depth, Material material)
+        {
+            int n = outline.Length;
+            var positions = new List<Vector3>(n * 2);
+            for (int i = 0; i < n; i++)
+                positions.Add(new Vector3(outline[i].x, 0f, outline[i].y));
+            for (int i = 0; i < n; i++)
+                positions.Add(new Vector3(outline[i].x, -depth, outline[i].y));
+
+            var faces = new List<Face>();
+            // Top and bottom as triangle fans; the outline is convex by construction.
+            for (int i = 1; i < n - 1; i++)
+                faces.Add(new Face(new[] { 0, i + 1, i }));
+            for (int i = 1; i < n - 1; i++)
+                faces.Add(new Face(new[] { n, n + i, n + i + 1 }));
+            // Side walls.
+            for (int i = 0; i < n; i++)
+            {
+                int j = (i + 1) % n;
+                faces.Add(new Face(new[] { i, j, n + j, i, n + j, n + i }));
+            }
+
+            var pb = ProBuilderMesh.Create(positions, faces);
+            pb.gameObject.name = name;
+            pb.transform.SetParent(parent, false);
+            pb.transform.position = new Vector3(0f, topY, 0f);
+            Finish(pb, material);
+            return pb;
         }
 
         static ProBuilderMesh Slab(string name, Transform parent,
