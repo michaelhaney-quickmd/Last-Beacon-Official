@@ -487,7 +487,7 @@ namespace LastBeacon.Tests
             {
                 // Straight through the wall plane: 1.2 m outside to 0.6 m inside, so
                 // this measures the doorway rather than whatever stands in the room.
-                var start = door.Threshold(above) + door.Outward * 1.2f;
+                var start = door.Threshold(door.Sill + above) + door.Outward * 1.2f;
                 if (Physics.Raycast(start, -door.Outward, out var hit, 1.8f))
                     blocked.Add($"{door.Building} at {above:0.0} m — {hit.collider.name}");
             }
@@ -505,16 +505,40 @@ namespace LastBeacon.Tests
                 Assert.That(door.Height, Is.GreaterThanOrEqualTo(2f),
                     $"{door.Building} doorway is {door.Height:0.00} m high.");
 
-                // A capsule standing in the opening must not intersect anything.
-                var at = door.Threshold(0.9f);
+                // A capsule standing in the opening must not intersect anything. It
+                // stands on the threshold surface, which may sit above the floor.
+                var at = door.Threshold(door.Sill + 0.9f);
                 // Anything whose top is within a step of the floor is something you
                 // step ONTO — the porch, a kerb, the plateau itself — not an obstruction.
                 var hits = Physics.OverlapCapsule(at + Vector3.up * 0.55f, at - Vector3.up * 0.55f, 0.35f)
-                    .Where(c => c.bounds.max.y > Gen.TierCompound + StepOffset)
+                    .Where(c => c.bounds.max.y > Gen.TierCompound + door.Sill + StepOffset)
                     .Select(c => c.name)
                     .Distinct()
                     .ToArray();
                 Assert.IsEmpty(hits, $"{door.Building} doorway is obstructed by " + string.Join(", ", hits));
+            }
+        }
+
+        [Test]
+        public void EveryDoorway_HasHeadroomAboveWhatYouStandOn()
+        {
+            // Measured from the surface under the doorway, not from the compound
+            // floor: a raised porch or sill eats into the clear height.
+            foreach (var door in Gen.Doorways)
+            foreach (float across in new[] { -0.3f, 0f, 0.3f })
+            {
+                var side = Vector3.Cross(Vector3.up, door.Outward).normalized * across;
+                var at = door.Threshold(1f) + side;
+
+                Assert.IsTrue(Physics.Raycast(at, Vector3.down, out var floor, 3f),
+                    $"{door.Building} doorway has no floor under it.");
+                Assert.IsTrue(Physics.Raycast(floor.point + Vector3.up * 0.05f, Vector3.up, out var head, 6f),
+                    $"{door.Building} doorway has no lintel above it.");
+
+                float clear = head.point.y - floor.point.y;
+                Assert.That(clear, Is.GreaterThanOrEqualTo(2f),
+                    $"{door.Building} doorway has {clear:0.00} m clear above {floor.collider.name} " +
+                    $"(lintel {head.collider.name}).");
             }
         }
 

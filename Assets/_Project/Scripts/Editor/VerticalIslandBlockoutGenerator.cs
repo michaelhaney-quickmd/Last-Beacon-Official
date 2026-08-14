@@ -90,14 +90,20 @@ namespace LastBeacon.Editor
             /// <summary>Where along that wall the opening is centred.</summary>
             public readonly float LocalZ;
             public readonly float Width;
+            /// <summary>Clear height ABOVE whatever you stand on in the doorway.</summary>
             public readonly float Height;
+            /// <summary>Height of the threshold surface above the compound floor.</summary>
+            public readonly float Sill;
 
             public DoorwaySpec(string building, Vector2 centre, float yaw,
-                float localX, float localZ, float width, float height)
+                float localX, float localZ, float width, float height, float sill = 0f)
             {
                 Building = building; Centre = centre; Yaw = yaw;
-                LocalX = localX; LocalZ = localZ; Width = width; Height = height;
+                LocalX = localX; LocalZ = localZ; Width = width; Height = height; Sill = sill;
             }
+
+            /// <summary>Local Y of the lintel: the sill is carried up with the opening.</summary>
+            public float LintelY => Sill + Height;
 
             /// <summary>Centre of the opening, at a height above the compound floor.</summary>
             public Vector3 Threshold(float above) =>
@@ -113,7 +119,9 @@ namespace LastBeacon.Editor
             new DoorwaySpec("Shed",     new Vector2(-18f, 13.5f),   15f,  5f,   0f,   3.5f, 3.2f),
             new DoorwaySpec("Workshop", new Vector2(-18.8f, 27.2f), 15f,  5.5f, -2.5f, 1.6f, 2.2f),
             new DoorwaySpec("Stores",   new Vector2(18f, 7.8f),    -20f, -4.5f, 1.5f, 1.6f, 2.2f),
-            new DoorwaySpec("House",    new Vector2(18f, 20f),       0f, -6f,   0f,   1.4f, 2.2f)
+            // The porch raises the threshold 0.3 m, so the opening is cut that much
+            // taller to keep 2.2 m clear above what you actually stand on.
+            new DoorwaySpec("House",    new Vector2(18f, 20f),       0f, -6f,   0f,   1.4f, 2.2f, 0.3f)
         };
 
         /// <summary>Lighthouse tower centre. Unchanged, and must stay unchanged.</summary>
@@ -1176,7 +1184,7 @@ namespace LastBeacon.Editor
 
             AppendBox(pos, faces, new Vector3(doorX, 0f, -hz), new Vector3(doorX + t, height, dz0));
             AppendBox(pos, faces, new Vector3(doorX, 0f, dz1), new Vector3(doorX + t, height, hz));
-            AppendBox(pos, faces, new Vector3(doorX, door.Height, dz0), new Vector3(doorX + t, height, dz1));
+            AppendBox(pos, faces, new Vector3(doorX, door.LintelY, dz0), new Vector3(doorX + t, height, dz1));
 
             var pb = ProBuilderMesh.Create(pos, faces);
             pb.gameObject.name = name;
@@ -1221,8 +1229,8 @@ namespace LastBeacon.Editor
             float swing = door.LocalX > 0f ? -1f : 1f;
             float leaf = doubleLeaf ? door.Width / 2f : door.Width;
             float x = inner + swing * leaf / 2f;
-            float y = TierCompound + door.Height / 2f;
-            var size = new Vector3(leaf, door.Height, 0.12f);
+            float y = TierCompound + door.LintelY / 2f;
+            var size = new Vector3(leaf, door.LintelY, 0.12f);
 
             if (doubleLeaf)
             {
