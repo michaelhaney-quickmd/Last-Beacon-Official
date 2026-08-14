@@ -20,6 +20,8 @@ namespace LastBeacon.Tests
         /// <summary>Matches BlockoutWalker.walkSpeed.</summary>
         const float WalkSpeed = 4.5f;
         const float EyeHeight = 1.7f;
+        /// <summary>Matches the CharacterController on the placeholder walker.</summary>
+        const float StepOffset = 0.45f;
 
         static readonly string[] BuildingBodies =
         {
@@ -463,16 +465,75 @@ namespace LastBeacon.Tests
             var yard = BoundsOf("MainYard");
             var from = new Vector3(yard.center.x, yard.max.y + 1.6f, yard.center.z);
 
-            foreach (var door in new[] { "Shed_Door", "Workshop_Door", "Stores_Door", "House_Door" })
+            foreach (var door in Gen.Doorways)
             {
-                var at = BoundsOf(door).center;
+                // Aim at the doorway itself, a metre out from the threshold.
+                var at = door.Threshold(1.2f) + door.Outward * 1f;
                 var dir = at - from;
 
-                // The door's own building is an acceptable hit - that IS the doorway.
                 bool clear = !Physics.Raycast(from, dir.normalized, out var hit, dir.magnitude - 0.4f);
-                Assert.IsTrue(clear, $"{door} is not visible from the courtyard centre" +
+                Assert.IsTrue(clear, $"{door.Building} doorway is not visible from the courtyard centre" +
                                      (clear ? "" : $" - blocked by {hit.collider.name}"));
             }
+        }
+
+        [Test]
+        public void EveryBuildingDoorway_IsAnActualOpening()
+        {
+            var blocked = new List<string>();
+
+            foreach (var door in Gen.Doorways)
+            foreach (float above in new[] { 0.4f, 1.0f, 1.7f })
+            {
+                // Straight through the wall plane: 1.2 m outside to 0.6 m inside, so
+                // this measures the doorway rather than whatever stands in the room.
+                var start = door.Threshold(above) + door.Outward * 1.2f;
+                if (Physics.Raycast(start, -door.Outward, out var hit, 1.8f))
+                    blocked.Add($"{door.Building} at {above:0.0} m — {hit.collider.name}");
+            }
+
+            Assert.IsEmpty(blocked, "Doorways that are not open:\n  " + string.Join("\n  ", blocked));
+        }
+
+        [Test]
+        public void EveryDoorway_TakesThePlayerCapsule()
+        {
+            foreach (var door in Gen.Doorways)
+            {
+                Assert.That(door.Width, Is.GreaterThanOrEqualTo(0.9f),
+                    $"{door.Building} doorway is {door.Width:0.00} m wide.");
+                Assert.That(door.Height, Is.GreaterThanOrEqualTo(2f),
+                    $"{door.Building} doorway is {door.Height:0.00} m high.");
+
+                // A capsule standing in the opening must not intersect anything.
+                var at = door.Threshold(0.9f);
+                // Anything whose top is within a step of the floor is something you
+                // step ONTO — the porch, a kerb, the plateau itself — not an obstruction.
+                var hits = Physics.OverlapCapsule(at + Vector3.up * 0.55f, at - Vector3.up * 0.55f, 0.35f)
+                    .Where(c => c.bounds.max.y > Gen.TierCompound + StepOffset)
+                    .Select(c => c.name)
+                    .Distinct()
+                    .ToArray();
+                Assert.IsEmpty(hits, $"{door.Building} doorway is obstructed by " + string.Join(", ", hits));
+            }
+        }
+
+        [Test]
+        public void TheLighthouseStair_ClimbsAtTheSameGradeAsTheBroadStair()
+        {
+            float broad = Grade(Gen.WpLanding, Gen.WpStairsTop);
+            var stair = BoundsOf("Stair_CompoundToLighthouse");
+            float run = stair.size.z;
+            float lighthouse = Mathf.Atan2(stair.size.y, run) * Mathf.Rad2Deg;
+
+            Assert.That(lighthouse, Is.EqualTo(broad).Within(1.5f),
+                $"Lighthouse stair climbs at {lighthouse:0.0} deg, broad stair at {broad:0.0} deg.");
+        }
+
+        static float Grade(Vector3 from, Vector3 to)
+        {
+            var d = to - from;
+            return Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
         }
 
         [Test]

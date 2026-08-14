@@ -80,12 +80,8 @@ namespace LastBeacon.Editor
             Debug.Log($"[Compound] Courtyard {yard.size.x:0.0} x {yard.size.z:0.0} m, centre ({centre.x:0.0}, {centre.z:0.0})");
 
             var destinations = new List<(string Name, Vector3 At)>();
-            foreach (var door in new[]
-                     { "Shed_Door", "Workshop_Door", "Stores_Door", "House_Door" })
-            {
-                if (Exists(door))
-                    destinations.Add((door, BoundsOf(door).center));
-            }
+            foreach (var door in Gen.Doorways)
+                destinations.Add(($"{door.Building} doorway", door.Threshold(0f)));
 
             destinations.Add(("Lighthouse entrance", new Vector3(0f, Gen.TierLighthouse, 32.5f)));
             destinations.Add(("Inner Gate", Gen.WpCompoundEntrance));
@@ -96,10 +92,9 @@ namespace LastBeacon.Editor
                 Debug.Log($"[Compound] centre -> {name}: {d:0.0} m, {d / WalkSpeed:0.0} s");
             }
 
-            if (Exists("Workshop_Door") && Exists("Shed_Door"))
             {
-                var w = BoundsOf("Workshop_Door").center;
-                var g = BoundsOf("Shed_Door").center;
+                var w = Gen.Doorways[1].Threshold(0f);
+                var g = Gen.Doorways[0].Threshold(0f);
                 float d = Vector3.Distance(new Vector3(w.x, 0f, w.z), new Vector3(g.x, 0f, g.z));
                 Debug.Log($"[Compound] Workshop -> Generator: {d:0.0} m, {d / WalkSpeed:0.0} s");
             }

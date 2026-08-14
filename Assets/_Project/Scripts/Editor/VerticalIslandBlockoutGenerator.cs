@@ -75,6 +75,47 @@ namespace LastBeacon.Editor
         const float GateOpening = 4.5f;
         public const float EyeHeight = 1.7f;
 
+        /// <summary>
+        /// Where each compound building is actually open. The wall is built around
+        /// these, and the tests read the same table, so an opening cannot drift away
+        /// from the doorway it is supposed to be.
+        /// </summary>
+        public readonly struct DoorwaySpec
+        {
+            public readonly string Building;
+            public readonly Vector2 Centre;
+            public readonly float Yaw;
+            /// <summary>Signed local X of the wall the doorway is cut into.</summary>
+            public readonly float LocalX;
+            /// <summary>Where along that wall the opening is centred.</summary>
+            public readonly float LocalZ;
+            public readonly float Width;
+            public readonly float Height;
+
+            public DoorwaySpec(string building, Vector2 centre, float yaw,
+                float localX, float localZ, float width, float height)
+            {
+                Building = building; Centre = centre; Yaw = yaw;
+                LocalX = localX; LocalZ = localZ; Width = width; Height = height;
+            }
+
+            /// <summary>Centre of the opening, at a height above the compound floor.</summary>
+            public Vector3 Threshold(float above) =>
+                At(Centre, Yaw, new Vector2(LocalX, LocalZ), TierCompound + above);
+
+            /// <summary>Unit vector pointing out through the doorway.</summary>
+            public Vector3 Outward =>
+                Quaternion.Euler(0f, Yaw, 0f) * new Vector3(Mathf.Sign(LocalX), 0f, 0f);
+        }
+
+        public static readonly DoorwaySpec[] Doorways =
+        {
+            new DoorwaySpec("Shed",     new Vector2(-18f, 13.5f),   15f,  5f,   0f,   3.5f, 3.2f),
+            new DoorwaySpec("Workshop", new Vector2(-18.8f, 27.2f), 15f,  5.5f, -2.5f, 1.6f, 2.2f),
+            new DoorwaySpec("Stores",   new Vector2(18f, 7.8f),    -20f, -4.5f, 1.5f, 1.6f, 2.2f),
+            new DoorwaySpec("House",    new Vector2(18f, 20f),       0f, -6f,   0f,   1.4f, 2.2f)
+        };
+
         /// <summary>Lighthouse tower centre. Unchanged, and must stay unchanged.</summary>
         public static readonly Vector2 LighthouseXZ = new Vector2(0f, 38f);
 
@@ -594,12 +635,11 @@ namespace LastBeacon.Editor
             var shedC = new Vector2(-18f, 13.5f);
             const float shedYaw = 15f;
             var shed = NewGroup("GeneratorShed", parent);
-            Building("Shed_Body", shed, shedC, new Vector2(10f, 8f), 4.2f, _concrete, shedYaw);
+            Shell("Shed_Body", shed, shedC, new Vector2(10f, 8f), 4.2f, shedYaw, Doorways[0], _concrete);
             Roof("Shed_Roof", shed, shedC, new Vector2(10.6f, 8.6f), 4.2f, 1f, _metal, shedYaw);
             // Broad opening, turned east-south-east: reads from the yard AND from a
             // player arriving through the Inner Gate.
-            Prop("Shed_Door", shed, shedC, shedYaw, new Vector2(5f, 0f), TierCompound + 1.6f,
-                new Vector3(0.3f, 3.2f, 3.5f), _metal);
+            DoorLeaves(shed, Doorways[0], _metal, true);
             Prop("Generator_Body", shed, shedC, shedYaw, new Vector2(-0.5f, 0f), TierCompound + 0.9f,
                 new Vector3(3.2f, 1.8f, 2f), _metal);
             Prop("Generator_FuelCap", shed, shedC, shedYaw, new Vector2(-1.7f, 0f), TierCompound + 1.95f,
@@ -626,11 +666,10 @@ namespace LastBeacon.Editor
             var workC = new Vector2(-18.8f, 27.2f);
             const float workYaw = 15f;
             var workshop = NewGroup("Workshop", parent);
-            Building("Workshop_Body", workshop, workC, new Vector2(11f, 8f), 4.5f, _wood, workYaw);
+            Shell("Workshop_Body", workshop, workC, new Vector2(11f, 8f), 4.5f, workYaw, Doorways[1], _wood);
             Roof("Workshop_Roof", workshop, workC, new Vector2(11.6f, 8.6f), 4.5f, 1.8f, _metal, workYaw);
             // Side-facing threshold in a corner nook, not a door in a flat wall.
-            Prop("Workshop_Door", workshop, workC, workYaw, new Vector2(5.5f, -2.5f), TierCompound + 1.1f,
-                new Vector3(0.3f, 2.2f, 1.6f), _plank);
+            DoorLeaves(workshop, Doorways[1], _plank, false);
             Prop("Workshop_AlcoveCanopy", workshop, workC, workYaw, new Vector2(6.9f, -2.5f), TierCompound + 2.6f,
                 new Vector3(3f, 0.2f, 3f), _metal);
             Prop("Workshop_AlcovePost", workshop, workC, workYaw, new Vector2(8.2f, -3.8f), TierCompound + 1.3f,
@@ -646,12 +685,12 @@ namespace LastBeacon.Editor
             var storesC = new Vector2(18f, 7.8f);
             const float storesYaw = -20f;
             var stores = NewGroup("StoresRadio", parent);
-            Building("Stores_Body", stores, storesC, new Vector2(9f, 7f), 3.8f, _wood, storesYaw);
+            Shell("Stores_Body", stores, storesC, new Vector2(9f, 7f), 3.8f, storesYaw, Doorways[2], _wood);
             Roof("Stores_Roof", stores, storesC, new Vector2(9.6f, 7.6f), 3.8f, 1.2f, _metal, storesYaw);
             // Recessed doorway: half toward the yard, half toward the Inner Gate.
-            Prop("Stores_Door", stores, storesC, storesYaw, new Vector2(-4.5f, 1.5f), TierCompound + 1.1f,
-                new Vector3(0.3f, 2.2f, 1.6f), _plank);
-            Prop("Stores_DoorRecess", stores, storesC, storesYaw, new Vector2(-3.9f, 1.5f), TierCompound + 2.4f,
+            DoorLeaves(stores, Doorways[2], _plank, false);
+            // The recess hood now sits OUTSIDE the wall it used to be buried in.
+            Prop("Stores_DoorRecess", stores, storesC, storesYaw, new Vector2(-5.4f, 1.5f), TierCompound + 2.4f,
                 new Vector3(1.4f, 0.2f, 2.4f), _plank);
             Prop("Stores_RadioSet", stores, storesC, storesYaw, new Vector2(3f, -2f), TierCompound + 1.1f,
                 new Vector3(1.6f, 1.2f, 0.8f), _metal);
@@ -665,10 +704,9 @@ namespace LastBeacon.Editor
             // --- Keeper's House: the one square-on building ----------------------
             var houseC = new Vector2(18f, 20f);
             var house = NewGroup("KeepersHouse", parent);
-            Building("House_Body", house, houseC, new Vector2(12f, 9f), 5.5f, _wood);
+            Shell("House_Body", house, houseC, new Vector2(12f, 9f), 5.5f, 0f, Doorways[3], _wood);
             Roof("House_Roof", house, houseC, new Vector2(12.6f, 9.6f), 5.5f, 2.6f, _plank);
-            Cube("House_Door", house, new Vector3(12.1f, TierCompound + 1.1f, 20f),
-                new Vector3(0.3f, 2.2f, 1.4f), _plank);
+            DoorLeaves(house, Doorways[3], _plank, false);
             // Raised porch with a canopy: the domestic threshold.
             Cube("House_Porch", house, new Vector3(10.8f, TierCompound + 0.15f, 20f),
                 new Vector3(2.8f, 0.3f, 4.2f), _plank);
@@ -736,7 +774,9 @@ namespace LastBeacon.Editor
                 TierCompound, TierCompound + 0.25f, _ground);
             Slab("Yard_ServiceStripSE", edges, 5.5f, 9f, 10f, 13.5f,
                 TierCompound, TierCompound + 0.2f, _ground);
-            Slab("Yard_RetainNorth", edges, -5f, 5f, 23.6f, 24f,
+            Slab("Yard_RetainNorth_W", edges, -5f, -2.8f, 23.6f, 24f,
+                TierCompound, TierCompound + 0.45f, _concrete);
+            Slab("Yard_RetainNorth_E", edges, 2.8f, 5f, 23.6f, 24f,
                 TierCompound, TierCompound + 0.45f, _concrete);
 
             Cube("Rock_YardEdge_NE", edges, new Vector3(10.2f, TierCompound + 0.2f, 23.4f),
@@ -774,8 +814,10 @@ namespace LastBeacon.Editor
             y += 3.6f;
             Cylinder("Lighthouse_Cap", parent, pos + Vector3.up * (y + 0.7f), 4.2f, 1.4f, _metal);
 
+            // Regraded to the broad stair's climb: base pulled back to z 21.6 so the
+            // 4 m rise is taken over a 10.4 m run instead of 6 m.
             Stair("Stair_CompoundToLighthouse", parent,
-                new Vector3(0f, TierCompound, 26f), new Vector3(0f, TierLighthouse, CompoundNorth), 5f);
+                new Vector3(0f, TierCompound, 21.6f), new Vector3(0f, TierLighthouse, CompoundNorth), 5f);
 
             Cube("Retain_Knoll_West", parent,
                 new Vector3(-7.75f, TierLighthouse + 0.55f, CompoundNorth), new Vector3(8.5f, 1.1f, 0.5f), _concrete);
@@ -859,7 +901,7 @@ namespace LastBeacon.Editor
             Marker(parent, "InnerGate_BarricadeSocket", new Vector3(-6f, TierCompound + 0.2f, CompoundSouth),
                 defense, "Secondary containment barrier. No control system of its own.");
 
-            Marker(parent, "ShiftBell_Point", new Vector3(2f, TierCompound + 1.4f, 23.2f), control,
+            Marker(parent, "ShiftBell_Point", new Vector3(3.8f, TierCompound + 1.4f, 22.4f), control,
                 "Ring to end the shift. Outdoors on purpose - a group ritual (GDD 15).");
             Marker(parent, "BeaconControl_Point", new Vector3(0f, TierLighthouse + 1.4f, 32.6f), control,
                 "Beacon controls, Operations floor.");
@@ -1106,19 +1148,98 @@ namespace LastBeacon.Editor
             return pb;
         }
 
-        static ProBuilderMesh Building(string name, Transform parent, Vector2 centreXZ, Vector2 footprint,
-            float height, Material material, float yaw = 0f)
+
+        /// <summary>
+        /// A building as four walls around an open interior, with a doorway cut into
+        /// one of them: two jambs and a lintel over the gap. Built as one mesh so the
+        /// object keeps its name, its footprint bounds and its yaw.
+        /// </summary>
+        static ProBuilderMesh Shell(string name, Transform parent, Vector2 centreXZ, Vector2 footprint,
+            float height, float yaw, DoorwaySpec door, Material material)
         {
-            var pb = Cube(name, parent,
-                new Vector3(centreXZ.x, TierCompound + height / 2f, centreXZ.y),
-                new Vector3(footprint.x, height, footprint.y),
-                material);
+            const float t = 0.3f;
+            float hx = footprint.x / 2f, hz = footprint.y / 2f;
+            float dz0 = door.LocalZ - door.Width / 2f;
+            float dz1 = door.LocalZ + door.Width / 2f;
+            bool east = door.LocalX > 0f;
+            float doorX = east ? hx - t : -hx;
+            float backX = east ? -hx : hx - t;
+
+            var pos = new List<Vector3>();
+            var faces = new List<Face>();
+
+            // End walls, inset so they butt against the long walls rather than
+            // overlapping them.
+            AppendBox(pos, faces, new Vector3(-hx + t, 0f, -hz), new Vector3(hx - t, height, -hz + t));
+            AppendBox(pos, faces, new Vector3(-hx + t, 0f, hz - t), new Vector3(hx - t, height, hz));
+            AppendBox(pos, faces, new Vector3(backX, 0f, -hz), new Vector3(backX + t, height, hz));
+
+            AppendBox(pos, faces, new Vector3(doorX, 0f, -hz), new Vector3(doorX + t, height, dz0));
+            AppendBox(pos, faces, new Vector3(doorX, 0f, dz1), new Vector3(doorX + t, height, hz));
+            AppendBox(pos, faces, new Vector3(doorX, door.Height, dz0), new Vector3(doorX + t, height, dz1));
+
+            var pb = ProBuilderMesh.Create(pos, faces);
+            pb.gameObject.name = name;
+            pb.transform.SetParent(parent, false);
+            pb.transform.position = new Vector3(centreXZ.x, TierCompound, centreXZ.y);
             pb.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            Finish(pb, material);
             return pb;
         }
 
+        /// <summary>
+        /// Appends one box to a shared vertex/face list, wound the same way as
+        /// PolygonDeck: top ring first, then the ring below it.
+        /// </summary>
+        static void AppendBox(List<Vector3> pos, List<Face> faces, Vector3 min, Vector3 max)
+        {
+            int b = pos.Count;
+            pos.Add(new Vector3(min.x, max.y, min.z));
+            pos.Add(new Vector3(max.x, max.y, min.z));
+            pos.Add(new Vector3(max.x, max.y, max.z));
+            pos.Add(new Vector3(min.x, max.y, max.z));
+            for (int i = 0; i < 4; i++)
+                pos.Add(new Vector3(pos[b + i].x, min.y, pos[b + i].z));
+
+            faces.Add(new Face(new[] { b, b + 2, b + 1, b, b + 3, b + 2 }));
+            faces.Add(new Face(new[] { b + 4, b + 5, b + 6, b + 4, b + 6, b + 7 }));
+            for (int i = 0; i < 4; i++)
+            {
+                int j = (i + 1) % 4;
+                faces.Add(new Face(new[] { b + i, b + j, b + 4 + j, b + i, b + 4 + j, b + 4 + i }));
+            }
+        }
+
+        /// <summary>
+        /// Door leaves standing open into the building, so the opening stays clear and
+        /// nothing protrudes into the yard or the service passage.
+        /// </summary>
+        static void DoorLeaves(Transform parent, DoorwaySpec door, Material material, bool doubleLeaf)
+        {
+            const float t = 0.3f;
+            float inner = door.LocalX > 0f ? door.LocalX - t : door.LocalX + t;
+            float swing = door.LocalX > 0f ? -1f : 1f;
+            float leaf = doubleLeaf ? door.Width / 2f : door.Width;
+            float x = inner + swing * leaf / 2f;
+            float y = TierCompound + door.Height / 2f;
+            var size = new Vector3(leaf, door.Height, 0.12f);
+
+            if (doubleLeaf)
+            {
+                Prop($"{door.Building}_DoorLeaf_A", parent, door.Centre, door.Yaw,
+                    new Vector2(x, door.LocalZ - door.Width / 2f), y, size, material);
+                Prop($"{door.Building}_DoorLeaf_B", parent, door.Centre, door.Yaw,
+                    new Vector2(x, door.LocalZ + door.Width / 2f), y, size, material);
+            }
+            else
+            {
+                Prop($"{door.Building}_DoorLeaf", parent, door.Centre, door.Yaw,
+                    new Vector2(x, door.LocalZ - door.Width / 2f), y, size, material);
+            }
+        }
+
         /// <summary>World position of a point given in a building's local XZ frame.</summary>
-        static Vector3 At(Vector2 centreXZ, float yaw, Vector2 local, float y) =>
+        public static Vector3 At(Vector2 centreXZ, float yaw, Vector2 local, float y) =>
             new Vector3(centreXZ.x, y, centreXZ.y) +
             Quaternion.Euler(0f, yaw, 0f) * new Vector3(local.x, 0f, local.y);
 
