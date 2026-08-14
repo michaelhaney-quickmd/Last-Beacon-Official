@@ -185,7 +185,12 @@ namespace LastBeacon.Editor
         {
             CreateMaterials();
 
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            // Open the existing scene rather than replacing it, so anything that is
+            // not the blockout survives a regenerate — the imported island Terrain
+            // above all. NewScene() here silently destroyed LB_Terrain.
+            var scene = File.Exists(ScenePath)
+                ? EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single)
+                : EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             ClearExistingRoots();
 
             var root = new GameObject(RootName).transform;
@@ -251,8 +256,10 @@ namespace LastBeacon.Editor
             // Flanking cliff, shaped to leave the landing and ramp corridor open.
             Slab("Rock_ShoreWest", parent, -22f, -11f, -45f, -36f, -2f, 2.6f, _rock);
             Slab("Rock_ShoreEast", parent, 11f, 22f, -45f, -33f, -2f, 2.6f, _rock);
-            // Only supports the pivot shelf, north of the ramp top. Its old extent
-            // (z -36..-22) swallowed the lower-left ramp for its whole upper half.
+            // Supports the pivot shelf, north of the ramp top. Kept: the reveal test
+            // cleared it, but the traversal suite did not — without it the terrain
+            // (3.35) becomes the walking surface below the shelf lip (4.04), a 0.69 m
+            // step at the ramp-top junction that the controller cannot climb.
             Slab("Cliff_LowerWestBench", parent, -20f, -10f, -30f, -22f, -2f, TierLowerAscent - 0.3f, _cliff);
             // Matches the deck footprint. At x 6 / z -22 it protruded into the
             // traverse corridor and buried the last 4 m of the climb.
@@ -583,7 +590,8 @@ namespace LastBeacon.Editor
             // compound threshold, so it neither overhangs the last step nor lands
             // proud of the plateau.
             Ramp("Path_AscentD_FinalRise", parent, WpStairsTop, WpCompoundEntrance, 4f, _ground, true);
-            Shoulder("Cliff_FinalRiseShoulder", parent, WpStairsTop, WpCompoundEntrance, 6f, 8f);
+            // Cliff_FinalRiseShoulder removed: the reveal test measured byte-identical
+            // terrain exposure and deck support with and without it.
 
             // Retaining walls only where the cut genuinely needs holding back.
             Cube("Ascent_Retain_West", parent, new Vector3(-8.6f, 14f, -3.5f),

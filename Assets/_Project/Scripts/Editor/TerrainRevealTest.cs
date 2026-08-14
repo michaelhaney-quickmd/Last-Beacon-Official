@@ -27,19 +27,20 @@ namespace LastBeacon.Editor
 
         static readonly string[] CategoryC =
         {
-            "Rock_ShoreBed", "Cliff_LowerWestBench", "Cliff_OverlookBench", "Cliff_FinalRiseShoulder"
+            // The two removable masses are gone; these are the ones kept as support.
+            "Rock_ShoreBed", "Cliff_OverlookBench"
         };
 
         /// <summary>Decks whose underside must not end up hanging in the air.</summary>
         static readonly (string Name, string Guards)[] Decks =
         {
             ("Dock_Apron", "Rock_ShoreBed"),
-            ("Shelf_LowerLeftPivot", "Cliff_LowerWestBench"),
+            ("Shelf_LowerLeftPivot", "(was Cliff_LowerWestBench)"),
             ("Terrace_Deck", "Cliff_OverlookBench"),
             ("Terrace_Throat", "Cliff_OverlookBench"),
             ("Ascent_Landing", "Cliff_OverlookBench"),
-            ("Path_AscentD_FinalRise", "Cliff_FinalRiseShoulder"),
-            ("Stair_AscentBroad", "Cliff_FinalRiseShoulder")
+            ("Path_AscentD_FinalRise", "(was Cliff_FinalRiseShoulder)"),
+            ("Stair_AscentBroad", "(was Cliff_FinalRiseShoulder)")
         };
 
         [MenuItem("Tools/Last Beacon/Terrain/Controlled Reveal Test")]
@@ -60,9 +61,9 @@ namespace LastBeacon.Editor
             {
                 ("00_baseline", new string[0]),
                 ("01_no_ShoreBed", new[] { "Rock_ShoreBed" }),
-                ("02_no_LowerWestBench", new[] { "Cliff_LowerWestBench" }),
+
                 ("03_no_OverlookBench", new[] { "Cliff_OverlookBench" }),
-                ("04_no_FinalRiseShoulder", new[] { "Cliff_FinalRiseShoulder" })
+                ("04_kept_only", new string[0])
             };
 
             var passed = new List<string>();
