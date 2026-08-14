@@ -23,7 +23,7 @@ namespace LastBeacon.Tests
 
         static readonly string[] BuildingBodies =
         {
-            "House_Body", "Shed_Body", "Workshop_Body", "Electrical_Body", "Storage_Body"
+            "House_Body", "Shed_Body", "Workshop_Body", "Stores_Body"
         };
 
         static readonly string[] RequiredMarkers =
@@ -32,7 +32,8 @@ namespace LastBeacon.Tests
             "Workshop_Bench", "Ammo_Storage", "Fuse_Storage", "Medical_Storage",
             "Dock_InspectionPoint", "MainGate_TrapSocket", "MainGate_BarricadeSocket",
             "MainGate_ControlStand", "InnerGate_BarricadeSocket",
-            "ShiftBell_Point", "BeaconControl_Point", "Radio_Point"
+            "ShiftBell_Point", "BeaconControl_Point", "Radio_Point",
+            "Radio_Emergency_Point", "StationPower_Point", "Manifest_Point"
         };
 
         static readonly string[] RequiredCameras =
@@ -352,8 +353,7 @@ namespace LastBeacon.Tests
             {
                 { "Shed_Body", new Vector2(-18f, 15.5f) },
                 { "Workshop_Body", new Vector2(-18f, 27f) },
-                { "House_Body", new Vector2(18f, 20f) },
-                { "Electrical_Body", new Vector2(17f, 8f) }
+                { "House_Body", new Vector2(18f, 20f) }
             };
 
             foreach (var (name, centre) in expected.Select(kv => (kv.Key, kv.Value)))
@@ -365,11 +365,61 @@ namespace LastBeacon.Tests
         }
 
         [Test]
-        public void Storage_MovedToTheApprovedPosition()
+        public void StoresRadio_IsOnTheApprovedPlot()
         {
-            var b = BoundsOf("Storage_Body");
-            Assert.That(b.center.x, Is.EqualTo(-19f).Within(0.5f), "Storage X.");
-            Assert.That(b.center.z, Is.EqualTo(12f).Within(0.5f), "Storage Z.");
+            // Moved onto the former electrical plot: the building nearest the Inner
+            // Gate, so manifest and radio answers travel toward the gate and dock.
+            var b = BoundsOf("Stores_Body");
+            Assert.That(b.center.x, Is.EqualTo(17f).Within(0.5f), "Stores X.");
+            Assert.That(b.center.z, Is.EqualTo(8f).Within(0.5f), "Stores Z.");
+        }
+
+        [Test]
+        public void TheCompoundHasFourBuildings_AndNoStandaloneElectrical()
+        {
+            foreach (var name in BuildingBodies)
+                Find(name);
+
+            Assert.IsNull(
+                Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
+                    .FirstOrDefault(t => t.name == "Electrical_Body"),
+                "The standalone electrical building should be gone; the shed makes " +
+                "power and the lighthouse routes it.");
+        }
+
+        [Test]
+        public void NoTwoBuildings_Intersect()
+        {
+            // Storage once sat 40.5 m2 inside the Generator Shed because no test
+            // covered building separation after the flat-compound suite was retired.
+            var problems = new List<string>();
+
+            for (int i = 0; i < BuildingBodies.Length; i++)
+            for (int j = i + 1; j < BuildingBodies.Length; j++)
+            {
+                var a = BoundsOf(BuildingBodies[i]);
+                var b = BoundsOf(BuildingBodies[j]);
+
+                bool xOver = a.min.x < b.max.x && b.min.x < a.max.x;
+                bool zOver = a.min.z < b.max.z && b.min.z < a.max.z;
+                if (xOver && zOver)
+                {
+                    problems.Add($"{BuildingBodies[i]} and {BuildingBodies[j]}");
+                }
+            }
+
+            Assert.IsEmpty(problems, $"Buildings intersect: {string.Join(", ", problems)}");
+        }
+
+        [Test]
+        public void TheRadioAndPowerSplits_AreBothPresent()
+        {
+            // Routine radio in Stores, emergency set in the lighthouse.
+            Find("Radio_Point");
+            Find("Radio_Emergency_Point");
+            // Generator-local electrics in the shed, station routing in the lighthouse.
+            Find("Fuse_Storage");
+            Find("StationPower_Point");
         }
 
         [Test]

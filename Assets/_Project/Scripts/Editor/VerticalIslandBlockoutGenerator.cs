@@ -541,54 +541,129 @@ namespace LastBeacon.Editor
         // --------------------------------------------------- tier 3 main compound
         // UNCHANGED except the approved Storage move from (-18, 4) to (-19, 12).
 
+        /// <summary>
+        /// The upper compound: four buildings framing a compact work yard.
+        ///
+        ///   Keeper's House       people / shift / health / story
+        ///   Generator Shed       MAKE power - local generation only
+        ///   Workshop             repair / defense
+        ///   Stores / Radio       supplies / arrivals / information
+        ///
+        /// Two deliberate redundancies: the routine station radio lives in Stores
+        /// while the lighthouse keeps a secondary emergency set, and the shed makes
+        /// power while the lighthouse routes and monitors it. The standalone
+        /// electrical building is gone; nothing replaces it.
+        /// </summary>
         static void BuildCompound(Transform parent)
         {
-            Slab("MainYard", parent, -8f, 6f, 10f, 24f, TierCompound, TierCompound + 0.04f, _ground);
+            // 18 x 14 functional yard. The kerbs and corners below break its
+            // perimeter so it does not read as an empty rectangular plaza, while
+            // the middle stays clear for four players.
+            Slab("MainYard", parent, -9f, 9f, 10f, 24f, TierCompound, TierCompound + 0.04f, _ground);
+            BuildCourtyardEdges(parent);
 
+            // --- Generator / Utility Shed: MAKE POWER ----------------------------
             var shed = NewGroup("GeneratorShed", parent);
-            Building("Shed_Body", shed, new Vector2(-18f, 15.5f), new Vector2(10f, 8f), 4f, _concrete);
-            Roof("Shed_Roof", shed, new Vector2(-18f, 15.5f), new Vector2(10.6f, 8.6f), 4f, 1.4f, _metal);
-            Cube("Shed_Door", shed, new Vector3(-12.9f, TierCompound + 1.1f, 15.5f),
-                new Vector3(0.3f, 2.2f, 1.6f), _metal);
+            Building("Shed_Body", shed, new Vector2(-18f, 15.5f), new Vector2(10f, 8f), 4.6f, _concrete);
+            Roof("Shed_Roof", shed, new Vector2(-18f, 15.5f), new Vector2(10.6f, 8.6f), 4.6f, 1.4f, _metal);
+            // Wide opening so the courtyard can see the machine inside.
+            Cube("Shed_Door", shed, new Vector3(-12.9f, TierCompound + 1.6f, 15.5f),
+                new Vector3(0.3f, 3.2f, 3.5f), _metal);
             Cube("Generator_Body", shed, new Vector3(-17.5f, TierCompound + 0.9f, 15.5f),
                 new Vector3(3.2f, 1.8f, 2f), _metal);
             Cube("Generator_FuelCap", shed, new Vector3(-18.7f, TierCompound + 1.95f, 15.5f),
                 new Vector3(0.7f, 0.3f, 0.7f), _plank);
+            // Generator-local electrical only. Station-wide routing stays in the
+            // lighthouse Operations floor.
+            Cube("Generator_Breaker", shed, new Vector3(-21.5f, TierCompound + 1.5f, 13f),
+                new Vector3(0.9f, 1.4f, 0.35f), _metal);
+            Cube("Generator_FusePanel", shed, new Vector3(-21.5f, TierCompound + 1.5f, 14.4f),
+                new Vector3(0.9f, 1.2f, 0.35f), _metal);
 
+            // --- Workshop: REPAIR / DEFENSE --------------------------------------
             var workshop = NewGroup("Workshop", parent);
             Building("Workshop_Body", workshop, new Vector2(-18f, 27f), new Vector2(12f, 9f), 4.5f, _wood);
             Roof("Workshop_Roof", workshop, new Vector2(-18f, 27f), new Vector2(12.6f, 9.6f), 4.5f, 1.8f, _metal);
+            // Door stays east: a south-facing door puts the building between the
+            // doorway and the lighthouse.
             Cube("Workshop_Door", workshop, new Vector3(-11.85f, TierCompound + 1.1f, 27f),
                 new Vector3(0.3f, 2.2f, 1.6f), _plank);
             Cube("Workshop_BenchProp", workshop, new Vector3(-20f, TierCompound + 0.5f, 26f),
                 new Vector3(4f, 1f, 1.2f), _plank);
+            Cube("Workshop_ToolRack", workshop, new Vector3(-20f, TierCompound + 1.5f, 24.6f),
+                new Vector3(4f, 1.6f, 0.3f), _plank);
+            Cube("Workshop_ScrapBin", workshop, new Vector3(-22.4f, TierCompound + 0.5f, 29.5f),
+                new Vector3(1.8f, 1f, 1.8f), _metal);
 
-            // Storage moved north so the final left climb enters the compound cleanly.
-            var storage = NewGroup("StorageArea", parent);
-            Building("Storage_Body", storage, new Vector2(-19f, 12f), new Vector2(10f, 8f), 4f, _wood);
-            Roof("Storage_Roof", storage, new Vector2(-19f, 12f), new Vector2(10.6f, 8.6f), 4f, 1.4f, _metal);
-            Cube("Storage_Door", storage, new Vector3(-13.9f, TierCompound + 1.1f, 12f),
+            // --- Stores / Radio Office: SUPPLIES / ARRIVALS / INFORMATION --------
+            // On the former electrical plot: nearest building to the Inner Gate, so
+            // manifest and radio answers travel toward the gate and dock.
+            var stores = NewGroup("StoresRadio", parent);
+            Building("Stores_Body", stores, new Vector2(17f, 8f), new Vector2(10f, 8f), 4f, _wood);
+            Roof("Stores_Roof", stores, new Vector2(17f, 8f), new Vector2(10.6f, 8.6f), 4f, 1.4f, _metal);
+            Cube("Stores_Door", stores, new Vector3(11.9f, TierCompound + 1.1f, 8f),
                 new Vector3(0.3f, 2.2f, 1.6f), _plank);
-            Cube("Cabinet_Ammunition", storage, new Vector3(-16.5f, TierCompound + 0.8f, 12f),
+            Cube("Stores_RadioSet", stores, new Vector3(20.4f, TierCompound + 1.1f, 5f),
+                new Vector3(1.6f, 1.2f, 0.8f), _metal);
+            Cube("Stores_ManifestDesk", stores, new Vector3(20.4f, TierCompound + 0.5f, 7f),
+                new Vector3(1.6f, 1f, 1.2f), _plank);
+            Cube("Cabinet_Ammunition", stores, new Vector3(13.2f, TierCompound + 0.8f, 10.4f),
                 new Vector3(1.8f, 1.6f, 0.8f), _metal);
+            Cube("Stores_DeliveryShelf", stores, new Vector3(17f, TierCompound + 0.8f, 11.2f),
+                new Vector3(3f, 1.6f, 0.8f), _plank);
 
+            // --- Keeper's House: PEOPLE / SHIFT / HEALTH / STORY -----------------
             var house = NewGroup("KeepersHouse", parent);
             Building("House_Body", house, new Vector2(18f, 20f), new Vector2(12f, 9f), 5.5f, _wood);
             Roof("House_Roof", house, new Vector2(18f, 20f), new Vector2(12.6f, 9.6f), 5.5f, 2.6f, _plank);
             Cube("House_Door", house, new Vector3(12.1f, TierCompound + 1.1f, 20f),
                 new Vector3(0.3f, 2.2f, 1.4f), _plank);
+            Cube("House_Porch", house, new Vector3(11.2f, TierCompound + 0.08f, 20f),
+                new Vector3(2.4f, 0.16f, 3.6f), _plank);
             Cube("House_Window_S", house, new Vector3(15f, TierCompound + 2.4f, 15.4f),
                 new Vector3(1.4f, 1.4f, 0.3f), _metal);
             Cube("Cabinet_Medical", house, new Vector3(12.6f, TierCompound + 0.8f, 18f),
                 new Vector3(0.8f, 1.6f, 1.6f), _metal);
+            Cube("House_StationClock", house, new Vector3(12.6f, TierCompound + 2.6f, 22f),
+                new Vector3(0.25f, 0.9f, 0.9f), _plank);
+            Cube("House_IncidentBoard", house, new Vector3(12.6f, TierCompound + 1.6f, 23.4f),
+                new Vector3(0.2f, 1.4f, 2f), _plank);
+            Cube("House_Bunks", house, new Vector3(21.6f, TierCompound + 0.6f, 22f),
+                new Vector3(3.6f, 1.2f, 2f), _wood);
 
-            var electrical = NewGroup("ElectricalStation", parent);
-            Building("Electrical_Body", electrical, new Vector2(17f, 8f), new Vector2(8f, 7f), 3.5f, _concrete);
-            Roof("Electrical_Roof", electrical, new Vector2(17f, 8f), new Vector2(8.4f, 7.4f), 3.5f, 1.2f, _metal);
-            Cube("Electrical_Door", electrical, new Vector3(13.1f, TierCompound + 1.1f, 8f),
-                new Vector3(0.3f, 2.2f, 1.4f), _metal);
-            Cube("Switchboard", electrical, new Vector3(13.4f, TierCompound + 1.6f, 9.8f),
-                new Vector3(0.35f, 2f, 2.2f), _metal);
+            // --- Courtyard props (GDD: crates, cart, lamps stay outdoors) --------
+            var yardProps = NewGroup("CourtyardProps", parent);
+            Cube("Yard_SupplyCrate_A", yardProps, new Vector3(-7.4f, TierCompound + 0.7f, 21.6f),
+                new Vector3(1.3f, 1.4f, 1.3f), _plank);
+            Cube("Yard_SupplyCrate_B", yardProps, new Vector3(-7.4f, TierCompound + 0.7f, 20f),
+                new Vector3(1.3f, 1.4f, 1.3f), _plank);
+            Cube("Yard_DeliveryCart", yardProps, new Vector3(7.2f, TierCompound + 0.5f, 11.6f),
+                new Vector3(1.4f, 1f, 2.2f), _wood);
+        }
+
+        /// <summary>
+        /// Perimeter irregularity for the yard: kerbs, a utility corner and a
+        /// service strip, all 0.2-0.5 m and all outside the central movement space.
+        /// </summary>
+        static void BuildCourtyardEdges(Transform parent)
+        {
+            var edges = NewGroup("CourtyardEdges", parent);
+
+            Slab("Yard_KerbWest", edges, -9.5f, -9f, 11f, 23f,
+                TierCompound, TierCompound + 0.35f, _concrete);
+            Slab("Yard_KerbEast", edges, 9f, 9.5f, 12.5f, 22f,
+                TierCompound, TierCompound + 0.3f, _concrete);
+            Slab("Yard_UtilityCornerNW", edges, -9f, -5.5f, 21f, 24f,
+                TierCompound, TierCompound + 0.25f, _ground);
+            Slab("Yard_ServiceStripSE", edges, 5.5f, 9f, 10f, 13.5f,
+                TierCompound, TierCompound + 0.2f, _ground);
+            Slab("Yard_RetainNorth", edges, -5f, 5f, 23.6f, 24f,
+                TierCompound, TierCompound + 0.45f, _concrete);
+
+            Cube("Rock_YardEdge_NE", edges, new Vector3(10.2f, TierCompound + 0.2f, 23.4f),
+                new Vector3(2.4f, 0.8f, 2f), _rock);
+            Cube("Rock_YardEdge_SW", edges, new Vector3(-10.4f, TierCompound + 0.25f, 10.6f),
+                new Vector3(2.8f, 0.9f, 2.4f), _rock);
         }
 
         // ------------------------------------------- tier 4 lighthouse — UNCHANGED
@@ -606,6 +681,14 @@ namespace LastBeacon.Editor
             y += 6.0f;
             Cylinder("Lighthouse_L2_Mechanical", parent, pos + Vector3.up * (y + 2.0f), 5.0f, 4.0f, _concrete);
             y += 4.0f;
+            // Operations floor props: station-wide power routing and the secondary
+            // radio. Local generator electrics live in the shed; the routine station
+            // radio lives in Stores. Both splits are deliberate redundancy.
+            Cube("Lighthouse_StationSwitchboard", parent,
+                new Vector3(-4.2f, TierLighthouse + 2.4f, 33.4f), new Vector3(2.4f, 2f, 0.35f), _metal);
+            Cube("Lighthouse_EmergencyRadio", parent,
+                new Vector3(4.2f, TierLighthouse + 1.5f, 33.4f), new Vector3(1.6f, 1.2f, 0.7f), _metal);
+
             Cube("Lighthouse_Balcony", parent, pos + Vector3.up * (y + 0.15f),
                 new Vector3(12.4f, 0.3f, 12.4f), _metal);
             Cylinder("Lighthouse_L3_LanternRoom", parent, pos + Vector3.up * (y + 1.9f), 4.0f, 3.6f, _metal);
@@ -640,12 +723,31 @@ namespace LastBeacon.Editor
                 "Damage repair panel.");
             Marker(parent, "Workshop_Bench", new Vector3(-20f, TierCompound + 1.1f, 26f), task,
                 "Trap repair, ammo crafting (GDD 24).");
-            Marker(parent, "Ammo_Storage", new Vector3(-16.5f, TierCompound + 1.7f, 12f), task,
-                "Ammunition cabinet.");
-            Marker(parent, "Fuse_Storage", new Vector3(13.4f, TierCompound + 1.7f, 9.8f), task,
-                "Fuse cabinet at the switchboard.");
+            // Fuse panel follows the generator: shed electrics are generator-local.
+            Marker(parent, "Fuse_Storage", new Vector3(-21.5f, TierCompound + 1.5f, 14.4f), task,
+                "Generator fuse panel. Station-wide routing is in the lighthouse.");
+            Marker(parent, "Generator_Breaker", new Vector3(-21.5f, TierCompound + 1.5f, 13f), task,
+                "Generator breaker.");
+
+            // --- Stores / Radio Office ------------------------------------------
+            Marker(parent, "Ammo_Storage", new Vector3(13.2f, TierCompound + 1.7f, 10.4f), task,
+                "Ammunition cabinet, Stores.");
+            Marker(parent, "Radio_Point", new Vector3(20.4f, TierCompound + 1.7f, 5f), control,
+                "Routine station radio: manifests, arrivals, weather, dock traffic.");
+            Marker(parent, "Manifest_Point", new Vector3(20.4f, TierCompound + 1.1f, 7f), task,
+                "Vessel manifest and expected-arrival records. Verify visitors here.");
+            Marker(parent, "Delivery_Records", new Vector3(17f, TierCompound + 1.7f, 11.2f), task,
+                "Delivery inventory and spare parts.");
+
+            // --- Keeper's House --------------------------------------------------
             Marker(parent, "Medical_Storage", new Vector3(12.6f, TierCompound + 1.7f, 18f), task,
                 "Medical cabinet, Keeper's House.");
+            Marker(parent, "StationClock_Point", new Vector3(12.6f, TierCompound + 2.6f, 22f), control,
+                "Station clock and shift log.");
+            Marker(parent, "IncidentBoard_Point", new Vector3(12.6f, TierCompound + 1.6f, 23.4f),
+                BlockoutMarker.MarkerKind.Landmark, "Incident board. Story and personal space.");
+            Marker(parent, "Bunks_Point", new Vector3(21.6f, TierCompound + 1.4f, 22f),
+                BlockoutMarker.MarkerKind.Landmark, "Bunks and rest area.");
 
             // Inspection happens at the DOCK. The Main Gate is the controlled
             // passage a visitor uses only after players decide to admit them.
@@ -678,12 +780,14 @@ namespace LastBeacon.Editor
             Marker(parent, "InnerGate_BarricadeSocket", new Vector3(-6f, TierCompound + 0.2f, CompoundSouth),
                 defense, "Secondary containment barrier. No control system of its own.");
 
-            Marker(parent, "ShiftBell_Point", new Vector3(3f, TierCompound + 1.4f, 24f), control,
-                "Ring to end the shift (GDD 15).");
-            Marker(parent, "BeaconControl_Point", new Vector3(2.5f, TierLighthouse + 1.4f, 32.8f), control,
-                "Remote beacon control, Operations floor.");
-            Marker(parent, "Radio_Point", new Vector3(-2.5f, TierLighthouse + 1.4f, 32.8f), control,
-                "Radio, Operations floor.");
+            Marker(parent, "ShiftBell_Point", new Vector3(2f, TierCompound + 1.4f, 23.2f), control,
+                "Ring to end the shift. Outdoors on purpose - a group ritual (GDD 15).");
+            Marker(parent, "BeaconControl_Point", new Vector3(0f, TierLighthouse + 1.4f, 32.6f), control,
+                "Beacon controls, Operations floor.");
+            Marker(parent, "StationPower_Point", new Vector3(-4.2f, TierLighthouse + 1.7f, 33.4f), control,
+                "Station power routing and status. The shed MAKES power; this ROUTES it.");
+            Marker(parent, "Radio_Emergency_Point", new Vector3(4.2f, TierLighthouse + 1.7f, 33.4f), control,
+                "Secondary radio: emergency, coast guard, beacon traffic.");
 
             Marker(parent, "Courtyard_Centre", WpYardCentre + Vector3.up * 0.2f,
                 BlockoutMarker.MarkerKind.Landmark, "Main Yard 16 x 14. Keep clear for sightlines.");
@@ -780,8 +884,8 @@ namespace LastBeacon.Editor
             WarmLamp(group, "Lamp_GeneratorShed", new Vector3(-13f, TierCompound + 3.6f, 15.5f), 16f, 6f);
             WarmLamp(group, "Lamp_Workshop", new Vector3(-18f, TierCompound + 4f, 22f), 16f, 6f);
             WarmLamp(group, "Lamp_KeepersHouse", new Vector3(12f, TierCompound + 4.4f, 20f), 16f, 5.5f);
-            WarmLamp(group, "Lamp_Storage", new Vector3(-14f, TierCompound + 3.6f, 12f), 14f, 5f);
-            WarmLamp(group, "Lamp_Electrical", new Vector3(13f, TierCompound + 3.6f, 8f), 14f, 5f);
+            WarmLamp(group, "Lamp_Stores", new Vector3(12f, TierCompound + 3.6f, 8f), 16f, 5.5f);
+            WarmLamp(group, "Lamp_Stores", new Vector3(12f, TierCompound + 3.6f, 8f), 16f, 5.5f);
 
             var pivot = new GameObject("Beacon_Pivot");
             pivot.transform.SetParent(group, false);

@@ -40,55 +40,61 @@ namespace LastBeacon.Editor
         {
             new Shot
             {
-                Name = "00_lower_map_aerial",
-                Position = new Vector3(48f, 32f, -68f),
-                LookAt = new Vector3(-2f, 6f, -20f),
-                FieldOfView = 58f,
-                LayoutLighting = true
-            },
-            new Shot
-            {
-                Name = "01_lower_map_from_west",
-                Position = new Vector3(-52f, 26f, -46f),
-                LookAt = new Vector3(2f, 8f, -20f),
+                Name = "00_compound_plan",
+                Position = new Vector3(0f, 66f, 17f),
+                LookAt = new Vector3(0f, 17f, 17.1f),
                 FieldOfView = 55f,
                 LayoutLighting = true
             },
             new Shot
             {
-                Name = "02_route_reading_from_dock",
-                Position = new Vector3(0f, 3.4f, -50f),
-                LookAt = new Vector3(-6f, 5f, -30f),
-                FieldOfView = 72f
-            },
-            new Shot
-            {
-                Name = "03_traverse_toward_terrace",
-                Position = new Vector3(-6f, 8.2f, -25f),
-                LookAt = new Vector3(12f, 10f, -16f),
-                FieldOfView = 72f
-            },
-            new Shot
-            {
-                Name = "04_terrace_east_wall",
-                Position = new Vector3(8f, 10.7f, -17.5f),
-                LookAt = new Vector3(19f, 12f, -15.5f),
-                FieldOfView = 70f
-            },
-            new Shot
-            {
-                Name = "05_landing_looking_east",
-                Position = new Vector3(-1f, 13.2f, -8f),
-                LookAt = new Vector3(14f, 14f, 0f),
-                FieldOfView = 70f
-            },
-            new Shot
-            {
-                Name = "06_island_aerial",
-                Position = new Vector3(62f, 44f, -80f),
-                LookAt = new Vector3(-2f, 14f, 4f),
+                Name = "01_compound_aerial",
+                Position = new Vector3(34f, 40f, -18f),
+                LookAt = new Vector3(-4f, 20f, 22f),
                 FieldOfView = 55f,
                 LayoutLighting = true
+            },
+            new Shot
+            {
+                Name = "02_entering_from_inner_gate",
+                Position = new Vector3(-6f, 18.7f, 3f),
+                LookAt = new Vector3(0f, 30f, 34f),
+                FieldOfView = 72f
+            },
+            new Shot
+            {
+                Name = "03_courtyard_centre_north",
+                Position = new Vector3(0f, 18.7f, 17f),
+                LookAt = new Vector3(0f, 32.6f, 38f),
+                FieldOfView = 72f
+            },
+            new Shot
+            {
+                Name = "04_courtyard_centre_west",
+                Position = new Vector3(0f, 18.7f, 17f),
+                LookAt = new Vector3(-18f, 19f, 15.5f),
+                FieldOfView = 75f
+            },
+            new Shot
+            {
+                Name = "05_generator_doorway_east",
+                Position = new Vector3(-12.4f, 18.7f, 15.5f),
+                LookAt = new Vector3(12f, 19f, 19f),
+                FieldOfView = 75f
+            },
+            new Shot
+            {
+                Name = "06_keepers_house_porch_west",
+                Position = new Vector3(11.2f, 18.7f, 20f),
+                LookAt = new Vector3(-16f, 19f, 18f),
+                FieldOfView = 75f
+            },
+            new Shot
+            {
+                Name = "07_stores_door_to_yard",
+                Position = new Vector3(11.4f, 18.7f, 8f),
+                LookAt = new Vector3(-2f, 22f, 26f),
+                FieldOfView = 74f
             }
         };
 
