@@ -92,7 +92,7 @@ namespace LastBeacon.Editor
         public static readonly Vector3 WpFenceLookout = new Vector3(15.5f, 9f, -17.5f);
         public static readonly Vector3 WpOverlookExit = new Vector3(11f, 9f, -12f);
         public static readonly Vector3 WpAscentATop = new Vector3(6.5f, 11.5f, -9f);
-        public static readonly Vector3 WpLanding = new Vector3(0f, 11.5f, -7.5f);
+        public static readonly Vector3 WpLanding = new Vector3(2.5f, 11.5f, -10.2f);
         public static readonly Vector3 WpStairsTop = new Vector3(-5f, 16f, -1f);
         public static readonly Vector3 WpCompoundEntrance = new Vector3(-6f, 17f, 2f);
         public static readonly Vector3 WpYardCentre = new Vector3(0f, 17f, 17f);
@@ -289,19 +289,35 @@ namespace LastBeacon.Editor
             //   deck    z -48   .. -41.5   the wooden jetty
             //   apron   z -41.5 .. -35     the 8 m landing that receives it
             //   cargo   x  3.5  ..   9.5   the delivery shelf beside it
-            Cube("Dock_Deck", parent, new Vector3(0f, 0.2f, -45f), new Vector3(5f, 0.4f, 6f), _plank);
+            // Jetty runs 10 m out, with a 12 m berthing arm along its head so a
+            // vessel can come alongside instead of nosing into the end.
+            Cube("Dock_Deck", parent, new Vector3(0f, 0.2f, -47f), new Vector3(5f, 0.4f, 10f), _plank);
+            Cube("Dock_BerthArm", parent, new Vector3(8.5f, 0.2f, -49.5f), new Vector3(12f, 0.4f, 5f), _plank);
             Slab("Dock_Apron", parent, -4.5f, 3.5f, -42f, -35f, -0.4f, 0.4f, _ground);
             Slab("Dock_SupplyApron", parent, 3.5f, 9.5f, -41f, -36f, -0.4f, 0.4f, _ground);
 
             // Pilings sit south of the shore bed so they read as standing in water.
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 5; i++)
             {
-                float z = -44f - i * 1.7f;
+                float z = -43.5f - i * 2.1f;
                 Cube($"Dock_Piling_W_{i}", parent, new Vector3(-2.2f, -1.2f, z), new Vector3(0.4f, 3f, 0.4f), _wood);
                 Cube($"Dock_Piling_E_{i}", parent, new Vector3(2.2f, -1.2f, z), new Vector3(0.4f, 3f, 0.4f), _wood);
             }
+            for (int i = 0; i < 3; i++)
+            {
+                float x = 4.5f + i * 4f;
+                Cube($"Dock_BerthPiling_{i}", parent, new Vector3(x, -1.2f, -51.6f), new Vector3(0.4f, 3f, 0.4f), _wood);
+            }
 
-            Cube("Dock_BoatCleat", parent, new Vector3(-2.6f, 0.6f, -47f), new Vector3(0.5f, 0.5f, 0.5f), _metal);
+            // Mooring furniture along the berth face, where a hull would lie.
+            Cube("Dock_BoatCleat", parent, new Vector3(-2.6f, 0.6f, -49f), new Vector3(0.5f, 0.5f, 0.5f), _metal);
+            for (int i = 0; i < 3; i++)
+            {
+                float x = 4.5f + i * 4f;
+                Cube($"Dock_Bollard_{i}", parent, new Vector3(x, 0.75f, -51.4f), new Vector3(0.5f, 0.7f, 0.5f), _metal);
+            }
+            Cube("Dock_BerthFender_W", parent, new Vector3(3.4f, 0.2f, -51.7f), new Vector3(0.4f, 0.6f, 0.4f), _wood);
+            Cube("Dock_BerthFender_E", parent, new Vector3(13.4f, 0.2f, -51.7f), new Vector3(0.4f, 0.6f, 0.4f), _wood);
 
             // Props now sit ON the aprons rather than sunk through them.
             Cube("Dock_SupplyLanding", parent, new Vector3(6f, 0.7f, -38.5f), new Vector3(4f, 0.6f, 4f), _plank);
@@ -512,10 +528,12 @@ namespace LastBeacon.Editor
             // Chunky broad stairs, short run. The surrounding cliff carries the scale.
             Stair("Stair_AscentBroad", parent, WpLanding, WpStairsTop, 5f);
 
-            Slab("Ascent_StairTopPad", parent, -7.5f, -2.5f, -1f, 0.5f,
-                TierCompound - 1f, TierCompound - 0.96f, _ground);
+            StairTopPad(parent, WpLanding, WpStairsTop, 5f, 1.6f);
 
-            Ramp("Path_AscentD_FinalRise", parent, WpStairsTop, WpCompoundEntrance, 4f, _ground);
+            // Surface-aligned: its top face passes through the stair head and the
+            // compound threshold, so it neither overhangs the last step nor lands
+            // proud of the plateau.
+            Ramp("Path_AscentD_FinalRise", parent, WpStairsTop, WpCompoundEntrance, 4f, _ground, true);
             Shoulder("Cliff_FinalRiseShoulder", parent, WpStairsTop, WpCompoundEntrance, 6f, 8f);
 
             // Retaining walls only where the cut genuinely needs holding back.
@@ -852,12 +870,15 @@ namespace LastBeacon.Editor
 
             Marker(parent, "Courtyard_Centre", WpYardCentre + Vector3.up * 0.2f,
                 BlockoutMarker.MarkerKind.Landmark, "Main Yard 16 x 14. Keep clear for sightlines.");
-            Marker(parent, "Spawn_Player", new Vector3(0f, TierDock + 0.6f, -46f),
+            Marker(parent, "Spawn_Player", new Vector3(0f, TierDock + 0.6f, -48f),
                 BlockoutMarker.MarkerKind.SpawnPoint, "Blockout walk starts at the dock.");
             Marker(parent, "Entrance_InnerGate", WpCompoundEntrance + Vector3.up * 0.2f,
                 BlockoutMarker.MarkerKind.Entrance, "Inner gate into the upper compound.");
             Marker(parent, "Entrance_MainGate", new Vector3(MainGateX, TierOverlook + 0.2f, -17.35f),
                 BlockoutMarker.MarkerKind.Entrance, "Primary controlled chokepoint.");
+            Marker(parent, "Boat_ArrivalBerth", new Vector3(8.5f, TierDock + 0.6f, -51.2f),
+                BlockoutMarker.MarkerKind.Landmark,
+                "Vessels come alongside here. 12 m of berthing face.");
             Marker(parent, "Task_DockDelivery", new Vector3(4.2f, TierDock + 0.9f, -39f), task,
                 "Supply drop-off. Carry loop starts here.");
             Marker(parent, "Overlook_FenceLookout", WpFenceLookout + Vector3.up * 0.2f,
@@ -882,7 +903,7 @@ namespace LastBeacon.Editor
 
         public static readonly (string Name, Vector3 Eye, Vector3 LookAt)[] ReviewCameras =
         {
-            ("CAM_Dock",          new Vector3(0f, TierDock + 0.4f + EyeHeight, -46f),      LanternCentre),
+            ("CAM_Dock",          new Vector3(0f, TierDock + 0.4f + EyeHeight, -48f),      LanternCentre),
             ("CAM_LowerLeft",     new Vector3(-14f, TierLowerAscent + EyeHeight, -28f),    LanternCentre),
             ("CAM_RightTraverse", new Vector3(0f, 6.5f + EyeHeight, -22f),                 LanternCentre),
             ("CAM_Overlook",      new Vector3(15.5f, TierOverlook + EyeHeight, -17.5f),    LanternCentre),
@@ -890,7 +911,7 @@ namespace LastBeacon.Editor
                 new Vector3(MainGateX, TierOverlook + 1.5f, -17.35f)),
             ("CAM_TerraceControl", new Vector3(15f, TierOverlook + EyeHeight, -14.6f),
                 new Vector3(MainGateX, TierOverlook + 1.5f, -17.35f)),
-            ("CAM_FinalAscent",   new Vector3(0f, TierLanding + EyeHeight, -7.5f),         LanternCentre),
+            ("CAM_FinalAscent",   new Vector3(4f, TierLanding + EyeHeight, -9f),           LanternCentre),
             ("CAM_CompoundEntry", new Vector3(-6f, TierCompound + EyeHeight, 2f),          LanternCentre)
         };
 
@@ -933,7 +954,8 @@ namespace LastBeacon.Editor
             RenderSettings.sun = moon;
 
             // One lamp per route beat, so the serpentine reads at night.
-            WarmLamp(group, "Lamp_Dock", new Vector3(0f, 3.4f, -42f), 20f, 6f);
+            WarmLamp(group, "Lamp_Dock", new Vector3(0f, 3.4f, -43f), 20f, 6f);
+            WarmLamp(group, "Lamp_Berth", new Vector3(8.5f, 3.4f, -49.5f), 18f, 5.5f);
             WarmLamp(group, "Lamp_LowerLeft", new Vector3(-14f, 7f, -28f), 18f, 6f);
             WarmLamp(group, "Lamp_Traverse", new Vector3(0f, 9.5f, -22f), 18f, 6f);
             WarmLamp(group, "Lamp_MainGate", new Vector3(10.4f, 12.7f, -19.8f), 22f, 8f);
@@ -985,7 +1007,7 @@ namespace LastBeacon.Editor
         {
             var go = new GameObject("BlockoutPlayer (PLACEHOLDER - delete in Phase 2)");
             go.transform.SetParent(parent, false);
-            go.transform.position = new Vector3(0f, TierDock + 1.2f, -46f);
+            go.transform.position = new Vector3(0f, TierDock + 1.2f, -48f);
 
             var controller = go.AddComponent<CharacterController>();
             controller.height = 1.8f;
@@ -1196,6 +1218,23 @@ namespace LastBeacon.Editor
         /// Low kerb running alongside a path segment, offset to its seaward side.
         /// Follows the ramp's slope so it never floats or rises to eye height.
         /// </summary>
+        /// <summary>
+        /// Fills the wedge above a diagonal stair: its south edge lies exactly on
+        /// the stair's top edge, so the pad never overhangs the flight below.
+        /// </summary>
+        static void StairTopPad(Transform parent, Vector3 from, Vector3 to, float width, float depth)
+        {
+            var dir = new Vector3(to.x - from.x, 0f, to.z - from.z).normalized;
+            var side = new Vector2(dir.z, -dir.x) * (width * 0.5f);
+            var top = new Vector2(to.x, to.z);
+            var ahead = new Vector2(dir.x, dir.z) * depth;
+
+            PolygonDeck("Ascent_StairTopPad", parent, new[]
+            {
+                top - side, top + side, top + side + ahead, top - side + ahead
+            }, to.y, 1.5f, _ground);
+        }
+
         static ProBuilderMesh Kerb(string name, Transform parent, Vector3 from, Vector3 to, float offset)
         {
             // Inset from both ends so a kerb never overhangs the segment below it

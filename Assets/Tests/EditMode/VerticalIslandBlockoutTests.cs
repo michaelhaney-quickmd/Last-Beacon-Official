@@ -329,8 +329,15 @@ namespace LastBeacon.Tests
             Find("Stair_AscentBroad");
             Find("Path_AscentD_FinalRise");
 
-            var stair = BoundsOf("Stair_AscentBroad");
-            float run = new Vector2(stair.size.x, stair.size.z).magnitude;
+            // Measured along the flight, from the lowest vertex to the highest. The
+            // bounding box diagonal grows with the stair's WIDTH as well as its run,
+            // so it reads a broad diagonal stair as longer than it is.
+            var mesh = Find("Stair_AscentBroad").GetComponent<MeshFilter>().sharedMesh;
+            var xf = Find("Stair_AscentBroad").transform;
+            var world = mesh.vertices.Select(xf.TransformPoint).ToArray();
+            var lowest = world.OrderBy(v => v.y).First();
+            var highest = world.OrderByDescending(v => v.y).First();
+            float run = new Vector2(highest.x - lowest.x, highest.z - lowest.z).magnitude;
             Assert.That(run, Is.LessThan(14f), $"Broad stair run is {run:0.0} m — too monumental.");
         }
 
