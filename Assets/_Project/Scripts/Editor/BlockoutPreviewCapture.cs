@@ -40,58 +40,44 @@ namespace LastBeacon.Editor
         {
             new Shot
             {
-                Name = "00_terrace_plan",
-                Position = new Vector3(11.5f, 46f, -16.5f),
-                LookAt = new Vector3(11.5f, 9f, -16.4f),
-                FieldOfView = 40f,
+                Name = "00_dock_plan",
+                Position = new Vector3(-3f, 40f, -38f),
+                LookAt = new Vector3(-3f, 0f, -37.9f),
+                FieldOfView = 45f,
                 LayoutLighting = true
             },
             new Shot
             {
-                Name = "01_terrace_aerial",
-                Position = new Vector3(-4f, 26f, -34f),
-                LookAt = new Vector3(13f, 9.5f, -15f),
+                Name = "01_dock_above",
+                Position = new Vector3(14f, 16f, -54f),
+                LookAt = new Vector3(-8f, 2f, -34f),
                 FieldOfView = 55f,
                 LayoutLighting = true
             },
             new Shot
             {
-                Name = "02_approaching_the_main_gate",
-                Position = new Vector3(3.2f, 8.4f, -20.6f),
-                LookAt = new Vector3(12f, 10.2f, -16f),
+                Name = "02_dock_from_seaward",
+                Position = new Vector3(0f, 3.2f, -52f),
+                LookAt = new Vector3(-6f, 3.5f, -34f),
                 FieldOfView = 70f
             },
             new Shot
             {
-                Name = "03_inside_the_gate",
-                Position = new Vector3(10f, 10.7f, -17.6f),
-                LookAt = new Vector3(16.4f, 10.6f, -15.4f),
+                Name = "03_stepping_ashore",
+                Position = new Vector3(0f, 2.1f, -43f),
+                LookAt = new Vector3(-8f, 2.6f, -34f),
                 FieldOfView = 72f
             },
             new Shot
             {
-                Name = "04_from_the_control_console",
-                Position = new Vector3(14.6f, 10.7f, -14.9f),
-                LookAt = new Vector3(6.8f, 9.6f, -18.2f),
+                Name = "04_ramp_upward",
+                Position = new Vector3(-2f, 2.1f, -40.5f),
+                LookAt = new Vector3(-13f, 5f, -30f),
                 FieldOfView = 72f
             },
             new Shot
             {
-                Name = "05_overlook_fence_to_dock",
-                Position = new Vector3(14.5f, 10.7f, -19.6f),
-                LookAt = new Vector3(0f, 1.2f, -44f),
-                FieldOfView = 75f
-            },
-            new Shot
-            {
-                Name = "06_terrace_to_lighthouse",
-                Position = new Vector3(12f, 10.7f, -16.5f),
-                LookAt = new Vector3(0f, 32.6f, 38f),
-                FieldOfView = 70f
-            },
-            new Shot
-            {
-                Name = "07_island_aerial",
+                Name = "05_island_aerial",
                 Position = new Vector3(62f, 44f, -80f),
                 LookAt = new Vector3(-2f, 14f, 4f),
                 FieldOfView = 55f,

@@ -192,12 +192,16 @@ namespace LastBeacon.Editor
         {
             // Solid cores. These are buried support; every exposed face gets a
             // battered plane over it so nothing reads as a rectangular terrace wall.
-            // Top raised to 0.4 to match the apron and deck, so the whole dock area
-            // is one continuous surface with no lateral step at the seams.
-            Slab("Cliff_ShorePlinth", parent, -20f, 20f, -44f, -34f, -2f, 0.4f, _rock);
+            // Shore bed sits 0.4 BELOW the landing, not level with it. The old
+            // Cliff_ShorePlinth topped out at 0.4 across 40 x 10 m and duplicated
+            // the apron's walking surface over 192 m2 of shared footprint.
+            Slab("Rock_ShoreBed", parent, -22f, 22f, -43f, -33f, -2f, 0f, _rock);
+            // Flanking cliff, shaped to leave the landing and ramp corridor open.
+            Slab("Rock_ShoreWest", parent, -22f, -11f, -45f, -36f, -2f, 2.6f, _rock);
+            Slab("Rock_ShoreEast", parent, 11f, 22f, -45f, -33f, -2f, 2.6f, _rock);
             // Only supports the pivot shelf, north of the ramp top. Its old extent
             // (z -36..-22) swallowed the lower-left ramp for its whole upper half.
-            Slab("Cliff_LowerWestBench", parent, -24f, -10f, -30f, -22f, -2f, TierLowerAscent, _cliff);
+            Slab("Cliff_LowerWestBench", parent, -24f, -10f, -30f, -22f, -2f, TierLowerAscent - 0.3f, _cliff);
             // Matches the deck footprint. At x 6 / z -22 it protruded into the
             // traverse corridor and buried the last 4 m of the climb.
             Slab("Cliff_OverlookBench", parent, OverlookXMin, OverlookXMax, -21f, -10f, -2f, TierOverlook, _cliff);
@@ -275,28 +279,34 @@ namespace LastBeacon.Editor
 
         static void BuildDock(Transform parent)
         {
-            // Apron top is flush with the dock deck at 0.4 - it used to sit 0.4 m
-            // lower, putting a lip right where the player steps off the jetty.
-            Slab("Dock_Apron", parent, -14f, 10f, -42f, -34f, -0.4f, 0.4f, _ground);
+            // Three abutting walkable surfaces, all topping out at exactly 0.4 and
+            // sharing clean boundaries rather than overlapping footprints:
+            //   deck    z -48   .. -41.5   the wooden jetty
+            //   apron   z -41.5 .. -35     the 8 m landing that receives it
+            //   cargo   x  3.5  ..   9.5   the delivery shelf beside it
+            Cube("Dock_Deck", parent, new Vector3(0f, 0.2f, -45f), new Vector3(5f, 0.4f, 6f), _plank);
+            Slab("Dock_Apron", parent, -4.5f, 3.5f, -42f, -35f, -0.4f, 0.4f, _ground);
+            Slab("Dock_SupplyApron", parent, 3.5f, 9.5f, -41f, -36f, -0.4f, 0.4f, _ground);
 
-            Cube("Dock_Deck", parent, new Vector3(0f, 0.2f, -44.5f), new Vector3(5f, 0.4f, 7f), _plank);
-            for (int i = 0; i < 4; i++)
+            // Pilings sit south of the shore bed so they read as standing in water.
+            for (int i = 0; i < 3; i++)
             {
-                float z = -42f - i * 2.1f;
+                float z = -44f - i * 1.7f;
                 Cube($"Dock_Piling_W_{i}", parent, new Vector3(-2.2f, -1.2f, z), new Vector3(0.4f, 3f, 0.4f), _wood);
                 Cube($"Dock_Piling_E_{i}", parent, new Vector3(2.2f, -1.2f, z), new Vector3(0.4f, 3f, 0.4f), _wood);
             }
 
             Cube("Dock_BoatCleat", parent, new Vector3(-2.6f, 0.6f, -47f), new Vector3(0.5f, 0.5f, 0.5f), _metal);
-            Cube("Dock_SupplyLanding", parent, new Vector3(4.2f, 0.3f, -39f), new Vector3(4f, 0.6f, 5f), _plank);
 
-            Cube("Dock_Crane_Base", parent, new Vector3(5.2f, 0.9f, -36.5f), new Vector3(1.6f, 1.2f, 1.6f), _metal);
-            Cube("Dock_Crane_Mast", parent, new Vector3(5.2f, 3.6f, -36.5f), new Vector3(0.5f, 4.2f, 0.5f), _metal);
-            Cube("Dock_Crane_Jib", parent, new Vector3(3.4f, 5.5f, -38f), new Vector3(0.4f, 0.4f, 4f), _metal);
+            // Props now sit ON the aprons rather than sunk through them.
+            Cube("Dock_SupplyLanding", parent, new Vector3(6f, 0.7f, -38.5f), new Vector3(4f, 0.6f, 4f), _plank);
+            Cube("Dock_Crane_Base", parent, new Vector3(8.2f, 1f, -40f), new Vector3(1.6f, 1.2f, 1.6f), _metal);
+            Cube("Dock_Crane_Mast", parent, new Vector3(8.2f, 3.7f, -40f), new Vector3(0.5f, 4.2f, 0.5f), _metal);
+            Cube("Dock_Crane_Jib", parent, new Vector3(6.6f, 5.6f, -39.6f), new Vector3(3.6f, 0.4f, 0.4f), _metal);
 
-            Cube("Dock_Crate_A", parent, new Vector3(8f, 1.1f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
-            Cube("Dock_Crate_B", parent, new Vector3(8f, 1.1f, -39.4f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
-            Cube("Dock_Crate_C", parent, new Vector3(8f, 2.5f, -37.5f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_A", parent, new Vector3(8.6f, 1.1f, -36.9f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_B", parent, new Vector3(8.6f, 1.1f, -38.4f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
+            Cube("Dock_Crate_C", parent, new Vector3(8.6f, 2.5f, -36.9f), new Vector3(1.4f, 1.4f, 1.4f), _plank);
         }
 
         // -------------------------------------------------- 01 — lower-left ascent
@@ -306,16 +316,18 @@ namespace LastBeacon.Editor
             // Route breaks LEFT off the apron and climbs the west shoulder.
             // Two segments: a gentle introductory ramp so the steep ascent never
             // begins at the dock edge, then the main climb.
-            Ramp("Path_IntroRamp", parent, WpRampBase, WpIntroTop, 4.5f, _ground);
-            Shoulder("Cliff_IntroShoulder", parent, WpRampBase, WpIntroTop, 6f, 8f);
+            Ramp("Path_IntroRamp", parent, WpRampBase, WpIntroTop, 4.5f, _ground, surfaceOnLine: true);
 
-            Ramp("Path_LowerLeftAscent", parent, WpIntroTop, LowerLeftRampTop, 4.5f, _ground);
+            // Tops out flush with the pivot shelf: the ramp's far corner beds into
+            // the shelf's thickness, so the shelf stays the walking surface there.
+            Ramp("Path_LowerLeftAscent", parent, WpIntroTop, LowerLeftRampTop, 4.5f, _ground, surfaceOnLine: true);
             Shoulder("Cliff_LowerLeftShoulder", parent, WpIntroTop, LowerLeftRampTop, 6f, 10f);
 
             // Small pivot shelf where the route turns from left-heading to right.
             // Pulled north of the ramp top: at its old extent it overhung the climb.
-            Slab("Shelf_LowerLeftPivot", parent, -18f, -10f, -30f, -22f,
-                TierLowerAscent, TierLowerAscent + 0.04f, _ground);
+            // Thickened so it beds into its bench instead of floating above it.
+            Slab("Shelf_LowerLeftPivot", parent, -18f, -10f, -29.4f, -22f,
+                TierLowerAscent - 0.6f, TierLowerAscent + 0.04f, _ground);
 
             // On the shelf's west lip. At its old south-lip position it floated
             // over the ramp climbing beneath and blocked the capsule.
@@ -328,7 +340,7 @@ namespace LastBeacon.Editor
         static void BuildRisingTraverse(Transform parent)
         {
             // Two legs sweeping RIGHT across the south face, climbing y4 -> y9.
-            Ramp("Path_TraverseLeg1", parent, WpLowerLeftTop, WpTraverseMid, 4f, _ground);
+            Ramp("Path_TraverseLeg1", parent, WpLowerLeftTop, WpTraverseMid, 4f, _ground, surfaceOnLine: true);
             Shoulder("Cliff_TraverseShoulder1", parent, WpLowerLeftTop, WpTraverseMid, 6f, 10f);
 
             // Leg 2 tops out at the overlook's south-west deck edge rather than
@@ -869,14 +881,20 @@ namespace LastBeacon.Editor
         /// Sloped walkable slab between two points, at any heading. Oriented along
         /// the full 3D direction so diagonal ramps stay flush with the route.
         /// </summary>
-        static ProBuilderMesh Ramp(string name, Transform parent, Vector3 from, Vector3 to, float width, Material material)
+        static ProBuilderMesh Ramp(string name, Transform parent, Vector3 from, Vector3 to, float width,
+            Material material, bool surfaceOnLine = false)
         {
             Vector3 delta = to - from;
-            var pb = ShapeGenerator.GenerateCube(PivotLocation.Center, new Vector3(width, 0.4f, delta.magnitude));
+            const float thickness = 0.4f;
+            var pb = ShapeGenerator.GenerateCube(PivotLocation.Center, new Vector3(width, thickness, delta.magnitude));
             pb.gameObject.name = name;
             pb.transform.SetParent(parent, false);
-            pb.transform.position = (from + to) / 2f;
-            pb.transform.rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            var rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            // surfaceOnLine drops the slab by half its thickness so its TOP face
+            // passes through the waypoints, giving a flush joint with flat decks.
+            pb.transform.position = (from + to) / 2f +
+                (surfaceOnLine ? rotation * (Vector3.down * (thickness / 2f)) : Vector3.zero);
+            pb.transform.rotation = rotation;
             Finish(pb, material);
             return pb;
         }

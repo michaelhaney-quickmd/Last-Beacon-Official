@@ -174,6 +174,23 @@ namespace LastBeacon.Tests
                                 out var direction, out float depth))
                             continue;
 
+                        // If this collider's own surface here is within a step of the
+                        // floor, it is a kerb the controller walks up, not a wall.
+                        // Probed by raycast, so it is correct for rotated slabs too.
+                        // Probe just inside the obstruction, not at the capsule centre:
+                        // a kerb beside the path has no surface directly above the
+                        // sample, only alongside it.
+                        var probeAt = foot - direction.normalized * 0.4f;
+                        float? surface = null;
+                        foreach (var down in Physics.RaycastAll(
+                                     new Vector3(probeAt.x, ground.Value + 2.5f, probeAt.z), Vector3.down, 5f))
+                        {
+                            if (down.collider != hit) continue;
+                            if (surface == null || down.point.y > surface.Value) surface = down.point.y;
+                        }
+                        if (surface.HasValue && surface.Value - ground.Value <= StepOffset)
+                            continue;
+
                         // A vertical push means the capsule is fractionally inside the
                         // floor it stands on. A horizontal push is a wall.
                         bool isWall = Mathf.Abs(direction.y) < 0.6f;
