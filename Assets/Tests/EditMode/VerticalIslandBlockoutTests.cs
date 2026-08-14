@@ -41,7 +41,8 @@ namespace LastBeacon.Tests
         static readonly string[] RequiredCameras =
         {
             "CAM_Dock", "CAM_LowerLeft", "CAM_RightTraverse",
-            "CAM_Overlook", "CAM_MainGate", "CAM_TerraceControl", "CAM_FinalAscent", "CAM_CompoundEntry"
+            "CAM_Overlook", "CAM_MainGate", "CAM_TerraceControl", "CAM_FinalAscent", "CAM_CompoundEntry",
+            "CAM_InnerGate", "CAM_Courtyard", "CAM_Lighthouse"
         };
 
         [OneTimeSetUp]
@@ -854,10 +855,47 @@ namespace LastBeacon.Tests
         // -------------------------------------------------------------------- scope
 
         [Test]
-        public void NoUnityTerrain_IsUsed()
+        public void TheIslandTerrain_MatchesTheApprovedImportSettings()
         {
-            Assert.IsEmpty(Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None),
-                "The blockout must not use Unity Terrain yet.");
+            // Replaces NoUnityTerrain_IsUsed. Terrain is now the broad landmass
+            // beneath the blockout, so the guard becomes an assertion about the
+            // one approved terrain rather than a ban on having any.
+            var terrains = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+            Assert.That(terrains.Length, Is.EqualTo(1), "Exactly one island terrain is expected.");
+
+            var t = terrains[0];
+            Assert.That(t.name, Is.EqualTo("LB_IslandTerrain_Heightmap"), "Terrain name.");
+            Assert.That(t.transform.position, Is.EqualTo(new Vector3(-82f, -12f, -82f)), "Terrain origin.");
+            Assert.That(t.terrainData.size, Is.EqualTo(new Vector3(160f, 40f, 160f)), "Terrain size.");
+            Assert.That(t.terrainData.heightmapResolution, Is.EqualTo(513), "Heightmap resolution.");
+            Assert.IsTrue(t.GetComponent<TerrainCollider>() != null &&
+                          t.GetComponent<TerrainCollider>().enabled, "TerrainCollider must stay enabled.");
+        }
+
+        [Test]
+        public void TheTerrain_NeverBecomesTheWalkingSurfaceOnTheRoute()
+        {
+            // The blockout stays authoritative underfoot. If terrain is ever the top
+            // collider on the route, it has poked through a gameplay surface.
+            var route = Gen.WalkPath;
+            var onTerrain = new List<string>();
+
+            for (int i = 1; i < route.Length; i++)
+            {
+                int steps = Mathf.Max(2, Mathf.CeilToInt(Vector3.Distance(route[i - 1], route[i]) / 0.5f));
+                for (int s = 0; s <= steps; s++)
+                {
+                    var at = Vector3.Lerp(route[i - 1], route[i], s / (float)steps);
+                    var top = Physics.RaycastAll(at + Vector3.up * 2f, Vector3.down, 6f)
+                        .OrderByDescending(h => h.point.y)
+                        .FirstOrDefault();
+                    if (top.collider is TerrainCollider)
+                        onTerrain.Add($"seg{i} ({at.x:0.0},{at.z:0.0}) stands on terrain at {top.point.y:0.00}");
+                }
+            }
+
+            Assert.IsEmpty(onTerrain.Distinct(), "Terrain is the walking surface at:\n  " +
+                string.Join("\n  ", onTerrain.Distinct().Take(8)));
         }
 
         [Test]

@@ -1133,7 +1133,11 @@ namespace LastBeacon.Editor
             ("CAM_TerraceControl", new Vector3(15f, TierOverlook + EyeHeight, -14.6f),
                 new Vector3(MainGateX, TierOverlook + 1.5f, -17.35f)),
             ("CAM_FinalAscent",   new Vector3(4f, TierLanding + EyeHeight, -9f),           LanternCentre),
-            ("CAM_CompoundEntry", new Vector3(-6f, TierCompound + EyeHeight, 2f),          LanternCentre)
+            ("CAM_CompoundEntry", new Vector3(-6f, TierCompound + EyeHeight, 2f),          LanternCentre),
+            // Added for the terrain review pass.
+            ("CAM_InnerGate",     new Vector3(-4f, TierCompound + EyeHeight, 6f),          LanternCentre),
+            ("CAM_Courtyard",     new Vector3(0f, TierCompound + EyeHeight, 17f),          LanternCentre),
+            ("CAM_Lighthouse",    new Vector3(0f, TierLighthouse + EyeHeight, 30f),        LanternCentre)
         };
 
         static void BuildReviewCameras(Transform parent)

@@ -40,6 +40,46 @@ namespace LastBeacon.Editor
         {
             new Shot
             {
+                Name = "08_island_silhouette_south",
+                Position = new Vector3(0f, 7f, -115f),
+                LookAt = new Vector3(0f, 14f, 10f),
+                FieldOfView = 45f,
+                LayoutLighting = true
+            },
+            new Shot
+            {
+                Name = "09_island_plan_wide",
+                Position = new Vector3(0f, 210f, 0f),
+                LookAt = new Vector3(0f, 0f, 0.1f),
+                FieldOfView = 50f,
+                LayoutLighting = true
+            },
+            new Shot
+            {
+                Name = "10_island_aerial",
+                Position = new Vector3(-60f, 78f, -120f),
+                LookAt = new Vector3(0f, 8f, 4f),
+                FieldOfView = 60f,
+                LayoutLighting = true
+            },
+            new Shot
+            {
+                Name = "11_dock_looking_north",
+                Position = new Vector3(0f, 2.1f, -47f),
+                LookAt = new Vector3(0f, 24f, 38f),
+                FieldOfView = 65f,
+                LayoutLighting = true
+            },
+            new Shot
+            {
+                Name = "12_main_gate_terrace",
+                Position = new Vector3(15.5f, 10.7f, -17.5f),
+                LookAt = new Vector3(2f, 12f, -14f),
+                FieldOfView = 70f,
+                LayoutLighting = true
+            },
+            new Shot
+            {
                 Name = "00_compound_plan",
                 Position = new Vector3(0f, 66f, 17f),
                 LookAt = new Vector3(0f, 17f, 17.1f),
