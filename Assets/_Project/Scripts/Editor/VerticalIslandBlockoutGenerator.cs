@@ -204,7 +204,7 @@ namespace LastBeacon.Editor
             Slab("Rock_ShoreEast", parent, 11f, 22f, -45f, -33f, -2f, 2.6f, _rock);
             // Only supports the pivot shelf, north of the ramp top. Its old extent
             // (z -36..-22) swallowed the lower-left ramp for its whole upper half.
-            Slab("Cliff_LowerWestBench", parent, -24f, -10f, -30f, -22f, -2f, TierLowerAscent - 0.3f, _cliff);
+            Slab("Cliff_LowerWestBench", parent, -20f, -10f, -30f, -22f, -2f, TierLowerAscent - 0.3f, _cliff);
             // Matches the deck footprint. At x 6 / z -22 it protruded into the
             // traverse corridor and buried the last 4 m of the climb.
             Slab("Cliff_OverlookBench", parent, TerraceWestEdge, OverlookXMax, -21f, -10f, -2f, TierOverlook - 0.5f, _cliff);
@@ -215,7 +215,7 @@ namespace LastBeacon.Editor
             Slab("Rock_TerraceNorth", parent, 14.5f, OverlookXMax, OverlookZMax, -10f,
                 TierOverlook, TierOverlook + 2.2f, _rock);
             // Seals the strip behind the electric fence so the gate is the only way in.
-            Slab("Rock_MainGateInfill", parent, TerraceWestEdge, 7.5f, -14.1f, OverlookZMax,
+            Slab("Rock_MainGateInfill", parent, TerraceWestEdge, 7.5f, -14.1f, -12.3f,
                 TierOverlook, TierOverlook + 3f, _rock);
             // Matches the landing footprint; at x 7 it buried the top of ascent A.
             Slab("Cliff_CompoundPlateau", parent,
@@ -242,10 +242,14 @@ namespace LastBeacon.Editor
                 new Vector3(0f, TierOverlook - 1f, -10f),
                 new Vector3(0f, TierCompound - 1f, CompoundSouth), 16f, _cliff);
 
-            // Cliff below the overlook. Steep on purpose — this is the drop the
-            // fence guards, and the wall you look down when you turn back.
-            BatteredFace("Cliff_OverlookFace_Battered", parent,
-                new Vector3(16f, 0f, -26f), new Vector3(16f, TierOverlook, -20f), 14f, _cliff);
+            // The terrace's east wall, seen straight-on from the whole terrace.
+            BatteredFace("Cliff_TerraceEastFace_Battered", parent,
+                new Vector3(17f, TierOverlook - 1f, -15.5f), new Vector3(22f, 15f, -15.5f), 11f, _cliff);
+
+            // The compound plateau's south wall between the centre and east flanks,
+            // which was left as bare vertical face.
+            BatteredFace("Cliff_SouthEastFace_Battered", parent,
+                new Vector3(11f, TierOverlook, -4f), new Vector3(11f, TierCompound, CompoundSouth), 8f, _cliff);
 
             // Broad chunky outcrops for silhouette. Few and large, never fragmented.
             Cube("Rock_Outcrop_W", parent, new Vector3(-33f, 9f, 6f), new Vector3(10f, 18f, 16f), _rock);
