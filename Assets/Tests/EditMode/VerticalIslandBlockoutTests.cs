@@ -351,8 +351,8 @@ namespace LastBeacon.Tests
         {
             var expected = new Dictionary<string, Vector2>
             {
-                { "Shed_Body", new Vector2(-18f, 15.5f) },
-                { "Workshop_Body", new Vector2(-18f, 27f) },
+                { "Shed_Body", new Vector2(-18f, 13.5f) },
+                { "Workshop_Body", new Vector2(-18.8f, 27.2f) },
                 { "House_Body", new Vector2(18f, 20f) }
             };
 
@@ -365,13 +365,117 @@ namespace LastBeacon.Tests
         }
 
         [Test]
+        public void BuildingRotations_MatchTheApprovedAsymmetry()
+        {
+            // Three buildings skew, one stays square-on. The square-on one is the
+            // Keeper's House, so the domestic building reads as the anchor.
+            var expected = new Dictionary<string, float>
+            {
+                { "Shed_Body", 15f },
+                { "Workshop_Body", 15f },
+                { "Stores_Body", -20f },
+                { "House_Body", 0f }
+            };
+
+            foreach (var (name, yaw) in expected.Select(kv => (kv.Key, kv.Value)))
+            {
+                float actual = Find(name).transform.rotation.eulerAngles.y;
+                if (actual > 180f)
+                    actual -= 360f;
+                Assert.That(actual, Is.EqualTo(yaw).Within(0.5f), $"{name} rotation.");
+            }
+        }
+
+        [Test]
+        public void TheServicePassage_StaysWideEnoughForFourPlayers()
+        {
+            // Tighter than the courtyard on purpose, but never a pinch point.
+            // Measured across the gap at standing height, so the lean-to, its posts
+            // and the fuel drums all count against the clear width.
+            var shed = BoundsOf("Shed_Body");
+            var workshop = BoundsOf("Workshop_Body");
+
+            // Measured from inside the passage outward, not from inside a building:
+            // a ray starting within a mesh does not reliably hit its own wall.
+            var mid = new Vector3((shed.center.x + workshop.center.x) * 0.5f,
+                                  Gen.TierCompound + 1f,
+                                  (shed.center.z + workshop.center.z) * 0.5f);
+            var across = new Vector3(workshop.center.x - shed.center.x, 0f,
+                                     workshop.center.z - shed.center.z).normalized;
+            var along = new Vector3(across.z, 0f, -across.x);
+
+            float clear = float.MaxValue;
+            for (float offset = -3f; offset <= 3f; offset += 0.5f)
+            {
+                var at = mid + along * offset;
+                if (!Physics.Raycast(at, across, out var toWorkshop, 20f)) continue;
+                if (!Physics.Raycast(at, -across, out var toShed, 20f)) continue;
+                clear = Mathf.Min(clear, toWorkshop.distance + toShed.distance);
+            }
+
+            Assert.That(clear, Is.GreaterThanOrEqualTo(3.2f),
+                $"Service passage is {clear:0.00} m clear; 3.2 m is the floor, 3.5 m preferred.");
+            Assert.That(clear, Is.LessThan(8f),
+                $"Service passage is {clear:0.00} m - it should still feel tighter than the yard.");
+        }
+
+        [Test]
+        public void TheInnerGateThroat_IsFramedButUnobstructed()
+        {
+            var spur = BoundsOf("Rock_GateSpur");
+            var retain = BoundsOf("Yard_RetainSouthWest");
+
+            float throat = spur.min.x - retain.max.x;
+            Assert.That(throat, Is.InRange(7f, 11f), $"Gate throat is {throat:0.0} m wide.");
+
+            // And nothing may sit on the traversal line through it.
+            var a = Gen.WpCompoundEntrance;
+            var b = Gen.WpYardCentre;
+            for (float t = 0f; t <= 1f; t += 0.05f)
+            {
+                var p = Vector3.Lerp(a, b, t);
+                foreach (float lateral in new[] { -1.2f, 0f, 1.2f })
+                {
+                    var dir = (b - a).normalized;
+                    var side = new Vector3(dir.z, 0f, -dir.x);
+                    var at = p + side * lateral + Vector3.up * 1f;
+
+                    var hits = Physics.OverlapSphere(at, 0.34f)
+                        .Where(h => h.name.StartsWith("Rock_Gate") || h.name.StartsWith("Yard_Retain"))
+                        .Select(h => h.name)
+                        .ToArray();
+
+                    Assert.IsEmpty(hits, $"Throat framing blocks the route at {at}: {string.Join(", ", hits)}");
+                }
+            }
+        }
+
+        [Test]
+        public void EveryBuildingEntrance_IsReachableFromTheCourtyard()
+        {
+            var yard = BoundsOf("MainYard");
+            var from = new Vector3(yard.center.x, yard.max.y + 1.6f, yard.center.z);
+
+            foreach (var door in new[] { "Shed_Door", "Workshop_Door", "Stores_Door", "House_Door" })
+            {
+                var at = BoundsOf(door).center;
+                var dir = at - from;
+
+                // The door's own building is an acceptable hit - that IS the doorway.
+                bool clear = !Physics.Raycast(from, dir.normalized, out var hit, dir.magnitude - 0.4f);
+                Assert.IsTrue(clear, $"{door} is not visible from the courtyard centre" +
+                                     (clear ? "" : $" - blocked by {hit.collider.name}"));
+            }
+        }
+
+        [Test]
         public void StoresRadio_IsOnTheApprovedPlot()
         {
             // Moved onto the former electrical plot: the building nearest the Inner
             // Gate, so manifest and radio answers travel toward the gate and dock.
             var b = BoundsOf("Stores_Body");
-            Assert.That(b.center.x, Is.EqualTo(17f).Within(0.5f), "Stores X.");
-            Assert.That(b.center.z, Is.EqualTo(8f).Within(0.5f), "Stores Z.");
+            Assert.That(b.center.x, Is.EqualTo(18f).Within(0.5f), "Stores X.");
+            Assert.That(b.center.z, Is.EqualTo(7.8f).Within(0.5f), "Stores Z.");
         }
 
         [Test]

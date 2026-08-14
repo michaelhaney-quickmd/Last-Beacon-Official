@@ -132,6 +132,37 @@ namespace LastBeacon.Editor
             if (blocked.Count > 0)
                 Debug.Log("[Compound] Blocked: " + string.Join(", ", blocked.Distinct().Take(8)));
 
+            // --- service passage and gate throat -----------------------------------
+            var shed = BoundsOf("Shed_Body");
+            var work = BoundsOf("Workshop_Body");
+            var mid = new Vector3((shed.center.x + work.center.x) * 0.5f, Gen.TierCompound + 1f,
+                                  (shed.center.z + work.center.z) * 0.5f);
+            var across = new Vector3(work.center.x - shed.center.x, 0f, work.center.z - shed.center.z).normalized;
+            var along = new Vector3(across.z, 0f, -across.x);
+
+            float narrowest = float.MaxValue;
+            for (float o = -3f; o <= 3f; o += 0.25f)
+            {
+                var at = mid + along * o;
+                if (!Physics.Raycast(at, across, out var w2, 20f)) continue;
+                if (!Physics.Raycast(at, -across, out var s2, 20f)) continue;
+                narrowest = Mathf.Min(narrowest, w2.distance + s2.distance);
+            }
+            Debug.Log($"[Compound] Service passage narrowest clear width {narrowest:0.00} m");
+
+            var spur = BoundsOf("Rock_GateSpur");
+            var retain = BoundsOf("Yard_RetainSouthWest");
+            Debug.Log($"[Compound] Inner Gate throat {spur.min.x - retain.max.x:0.0} m wide " +
+                      $"(retain to {retain.max.x:0.0}, spur from {spur.min.x:0.0})");
+
+            foreach (var name in Bodies.Where(Exists))
+            {
+                float yaw = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
+                    .First(t => t.name == name).rotation.eulerAngles.y;
+                if (yaw > 180f) yaw -= 360f;
+                Debug.Log($"[Compound] {name} rotation {yaw:0.0} deg");
+            }
+
             if (playerGo != null)
                 playerGo.SetActive(true);
         }
