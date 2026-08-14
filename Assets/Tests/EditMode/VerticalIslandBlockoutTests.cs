@@ -543,6 +543,144 @@ namespace LastBeacon.Tests
         }
 
         [Test]
+        public void TheLighthouseDoor_IsAnOpeningYouCanWalkThrough()
+        {
+            // The tower door faces south, at the head of the compound stair. The
+            // threshold is level with the knoll, so there is no step to climb.
+            foreach (float above in new[] { 0.4f, 1f, 1.7f })
+            {
+                var start = new Vector3(0f, Gen.TierLighthouse + above, 30f);
+                Assert.IsFalse(Physics.Raycast(start, Vector3.forward, out var hit, 4f),
+                    $"Lighthouse doorway blocked at {above:0.0} m by " +
+                    (hit.collider != null ? hit.collider.name : "nothing"));
+            }
+        }
+
+        [Test]
+        public void TheLighthouseDoor_HasHeadroomFromTheStairTop()
+        {
+            // Under the wall itself: the plinth in front of it is recessed open.
+            var at = new Vector3(0f, Gen.TierLighthouse + 1f, 32.7f);
+            Assert.IsTrue(Physics.Raycast(at, Vector3.down, out var floor, 3f),
+                "No floor in the lighthouse doorway.");
+            Assert.IsTrue(Physics.Raycast(floor.point + Vector3.up * 0.05f, Vector3.up, out var head, 8f),
+                "No lintel over the lighthouse doorway.");
+
+            Assert.That(floor.point.y, Is.EqualTo(Gen.TierLighthouse).Within(0.3f),
+                $"Doorway threshold sits at {floor.point.y:0.00}, not level with the knoll.");
+            Assert.That(head.point.y - floor.point.y, Is.GreaterThanOrEqualTo(2f),
+                $"Only {head.point.y - floor.point.y:0.00} m clear under {head.collider.name}.");
+        }
+
+        [Test]
+        public void EveryLighthouseStorey_HasAFloorAndStandingRoom()
+        {
+            // Sampled off-axis so the probe misses the newel, and away from the
+            // stairwell openings.
+            var storeys = new (string Name, float Floor, Vector3 At)[]
+            {
+                // South-east of the newel: the winders start at north, so the low
+                // treads are on the far side of the room from this probe.
+                ("Operations", 21f,   new Vector3(3f, 0f, 36.3f)),
+                ("Mechanical", 32.8f, new Vector3(2.5f, 0f, 38f)),
+                ("Lantern",    37.1f, new Vector3(-2f, 0f, 38f))
+            };
+
+            foreach (var (name, expected, at) in storeys)
+            {
+                var from = new Vector3(at.x, expected + 1.2f, at.z);
+                Assert.IsTrue(Physics.Raycast(from, Vector3.down, out var floor, 3f),
+                    $"{name} has no floor under {at}.");
+                Assert.That(floor.point.y, Is.EqualTo(expected).Within(0.25f),
+                    $"{name} floor is at {floor.point.y:0.00}, expected {expected:0.00}.");
+
+                Assert.IsTrue(Physics.Raycast(floor.point + Vector3.up * 0.05f, Vector3.up, out var head, 12f),
+                    $"{name} has no ceiling.");
+                Assert.That(head.point.y - floor.point.y, Is.GreaterThanOrEqualTo(2f),
+                    $"{name} has {head.point.y - floor.point.y:0.00} m of standing room.");
+            }
+        }
+
+        [Test]
+        public void TheLighthouseWinders_AreWalkable()
+        {
+            // Walked, not just arithmetic: every tread must be there, the step up
+            // must be within the controller's reach, and the floor above must not
+            // come down on your head before the stairwell opens.
+            var flights = new (string Name, float From, float To, float Inner, float Outer,
+                float Start, float Sweep, int Steps)[]
+            {
+                ("Lighthouse_Stair_OpsToMechanical", 21f, 32.8f, 0.5f, 4f, 0f, 630f, 28),
+                ("Lighthouse_Stair_MechanicalToLantern", 32.8f, 37.1f, 0.5f, 3.4f, 270f, 270f, 11)
+            };
+
+            var problems = new List<string>();
+
+            foreach (var f in flights)
+            {
+                Find(f.Name);
+                var centre = new Vector3(Gen.LighthouseXZ.x, 0f, Gen.LighthouseXZ.y);
+                float mid = (f.Inner + f.Outer) / 2f;
+                float previous = f.From;
+                int samples = f.Steps * 3;
+
+                for (int i = 0; i <= samples; i++)
+                {
+                    float a = (f.Start + f.Sweep * i / samples) * Mathf.Deg2Rad;
+                    var at = centre + new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * mid;
+                    float expected = Mathf.Lerp(f.From, f.To, i / (float)samples);
+
+                    var tread = Physics.RaycastAll(new Vector3(at.x, expected + 1.5f, at.z), Vector3.down, 3.5f)
+                        .Where(h => h.point.y <= expected + 1.2f)
+                        .OrderByDescending(h => h.point.y)
+                        .ToArray();
+
+                    if (tread.Length == 0)
+                    {
+                        problems.Add($"{f.Name}: no tread at {a * Mathf.Rad2Deg:0} deg");
+                        continue;
+                    }
+
+                    float y = tread[0].point.y;
+                    if (Mathf.Abs(y - previous) > StepOffset)
+                        problems.Add($"{f.Name}: {Mathf.Abs(y - previous):0.00} m step at " +
+                                     $"{a * Mathf.Rad2Deg:0} deg");
+                    previous = y;
+
+                    if (Physics.Raycast(new Vector3(at.x, y + 0.06f, at.z), Vector3.up, out var head, 12f) &&
+                        head.point.y - y < 2f)
+                        problems.Add($"{f.Name}: {head.point.y - y:0.00} m headroom at " +
+                                     $"{a * Mathf.Rad2Deg:0} deg under {head.collider.name}");
+                }
+            }
+
+            Assert.IsEmpty(problems.Distinct(), "Winder problems:\n  " +
+                string.Join("\n  ", problems.Distinct().Take(8)));
+        }
+
+        [Test]
+        public void TheOperationsFittings_StandInsideTheRoom()
+        {
+            var centre = new Vector2(Gen.LighthouseXZ.x, Gen.LighthouseXZ.y);
+
+            foreach (var name in new[]
+                     {
+                         "Lighthouse_StationSwitchboard", "Lighthouse_EmergencyRadio",
+                         "Lighthouse_BeaconConsole", "StationPower_Point",
+                         "Radio_Emergency_Point", "BeaconControl_Point"
+                     })
+            {
+                var at = Find(name).transform.position;
+                float r = Vector2.Distance(new Vector2(at.x, at.z), centre);
+
+                // Inside the bore, not buried in the wall it used to sit in.
+                Assert.That(r, Is.LessThan(5.1f), $"{name} is {r:0.00} m out — inside the wall.");
+                Assert.That(at.y, Is.GreaterThan(Gen.TierLighthouse),
+                    $"{name} is below the Operations floor.");
+            }
+        }
+
+        [Test]
         public void TheLighthouseStair_ClimbsAtTheSameGradeAsTheBroadStair()
         {
             float broad = Grade(Gen.WpLanding, Gen.WpStairsTop);

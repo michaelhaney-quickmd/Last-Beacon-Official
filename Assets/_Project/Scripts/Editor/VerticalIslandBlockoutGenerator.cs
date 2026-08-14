@@ -795,32 +795,102 @@ namespace LastBeacon.Editor
 
         // ------------------------------------------- tier 4 lighthouse — UNCHANGED
 
+        // --- Lighthouse shell dimensions -------------------------------------
+        // Outer radii are unchanged; the interiors are cut out of them. Every
+        // storey shares a wall thickness so the inner face reads as one bore.
+        const float TowerWall = 0.4f;
+        const float PlinthOuter = 6.2f, PlinthInner = 5.1f;
+        const float L1Outer = 5.5f;
+        const float ShaftOuter = 4.6f;
+        const float L2Outer = 5.0f;
+        const float L3Outer = 4.0f;
+        /// <summary>Storey levels, from the knoll up.</summary>
+        const float OpsFloor = TierLighthouse;          // 21.0, flush with the knoll
+        const float L1Top = 26.8f;
+        const float ShaftTop = 32.8f;
+        const float MechFloor = ShaftTop;               // 32.8
+        const float L2Top = 36.8f;
+        const float LanternFloor = 37.1f;               // flush with the balcony
+        const float L3Top = 40.5f;
+        /// <summary>The doorway faces south, down the stair to the compound.</summary>
+        const float DoorBearing = 180f;
+        const float DoorHalfAngle = 9.5f;
+        const float DoorHead = 2.2f;
+        const float NewelRadius = 0.5f;
+
         static void BuildLighthouse(Transform parent)
         {
-            var pos = new Vector3(LighthouseXZ.x, 0f, LighthouseXZ.y);
-            float y = TierLighthouse;
+            float d0 = DoorBearing - DoorHalfAngle;
+            float d1 = DoorBearing + DoorHalfAngle;
 
-            Cylinder("Lighthouse_Plinth", parent, pos + Vector3.up * (y + 0.5f), 6.2f, 1.0f, _rock);
-            y += 1.0f;
-            Cylinder("Lighthouse_L1_Operations", parent, pos + Vector3.up * (y + 2.4f), 5.5f, 4.8f, _concrete);
-            y += 4.8f;
-            Cylinder("Lighthouse_Shaft", parent, pos + Vector3.up * (y + 3.0f), 4.6f, 6.0f, _concrete);
-            y += 6.0f;
-            Cylinder("Lighthouse_L2_Mechanical", parent, pos + Vector3.up * (y + 2.0f), 5.0f, 4.0f, _concrete);
-            y += 4.0f;
-            // Operations floor props: station-wide power routing and the secondary
-            // radio. Local generator electrics live in the shed; the routine station
-            // radio lives in Stores. Both splits are deliberate redundancy.
+            // --- plinth: a ring, so the entry is level with the knoll ---------
+            // Solid, it presented a 1 m wall to the top of the compound stair.
+            RingWall("Lighthouse_Plinth", parent, PlinthInner, PlinthOuter,
+                OpsFloor, OpsFloor + 1f, d1, d0 + 360f, _rock);
+
+            // --- Operations: the room the beacon is run from ------------------
+            var ops = new List<Vector3>();
+            var opsFaces = new List<Face>();
+            AppendArcWall(ops, opsFaces, L1Outer - TowerWall, L1Outer, OpsFloor + 1f, L1Top, d1, d0 + 360f);
+            // Lintel over the doorway, which is cut from the knoll upward.
+            AppendArcWall(ops, opsFaces, L1Outer - TowerWall, L1Outer,
+                OpsFloor + DoorHead, L1Top, d0, d1);
+            Mesh("Lighthouse_L1_Operations", parent, ops, opsFaces, _concrete);
+
+            // Roof ring closing the gap between the Operations wall and the
+            // narrower shaft that rises out of it.
+            RingWall("Lighthouse_L1_Roof", parent, ShaftOuter - TowerWall, L1Outer,
+                L1Top, L1Top + 0.2f, 0f, 360f, _concrete);
+
+            RingWall("Lighthouse_Shaft", parent, ShaftOuter - TowerWall, ShaftOuter,
+                L1Top, ShaftTop, 0f, 360f, _concrete);
+
+            // --- Mechanical -----------------------------------------------------
+            RingWall("Lighthouse_L2_Mechanical", parent, L2Outer - TowerWall, L2Outer,
+                MechFloor, L2Top, 0f, 360f, _concrete);
+            // Floor with a stairwell sector left open where the flight arrives.
+            RingWall("Lighthouse_MechanicalFloor", parent, NewelRadius, L2Outer - TowerWall,
+                MechFloor - 0.2f, MechFloor, 270f, 120f + 360f, _metal);
+
+            // --- balcony: a ring, so the flight can carry on through it ---------
+            BalconyRing(parent, 12.4f, 7.2f, L2Top, L2Top + 0.3f);
+
+            // --- Lantern room ----------------------------------------------------
+            var lantern = new List<Vector3>();
+            var lanternFaces = new List<Face>();
+            AppendArcWall(lantern, lanternFaces, L3Outer - TowerWall, L3Outer,
+                LanternFloor - 0.2f, L3Top, d1, d0 + 360f);
+            AppendArcWall(lantern, lanternFaces, L3Outer - TowerWall, L3Outer,
+                LanternFloor + DoorHead, L3Top, d0, d1);
+            Mesh("Lighthouse_L3_LanternRoom", parent, lantern, lanternFaces, _metal);
+
+            RingWall("Lighthouse_LanternFloor", parent, NewelRadius, L3Outer - TowerWall,
+                LanternFloor - 0.2f, LanternFloor, 180f, 30f + 360f, _metal);
+
+            Cylinder("Lighthouse_Cap", parent,
+                new Vector3(LighthouseXZ.x, L3Top + 0.7f, LighthouseXZ.y), 4.2f, 1.4f, _metal);
+
+            // --- vertical circulation ---------------------------------------------
+            Cylinder("Lighthouse_Newel", parent,
+                new Vector3(LighthouseXZ.x, (OpsFloor + LanternFloor) / 2f, LighthouseXZ.y),
+                NewelRadius, LanternFloor - OpsFloor, _concrete);
+
+            // Winders around the newel. Starting north keeps the first tread clear
+            // of anyone stepping in through the south door.
+            SpiralStair("Lighthouse_Stair_OpsToMechanical", parent,
+                OpsFloor, MechFloor, NewelRadius, 4f, 0f, 630f, 28);
+            SpiralStair("Lighthouse_Stair_MechanicalToLantern", parent,
+                MechFloor, LanternFloor, NewelRadius, 3.4f, 270f, 270f, 11);
+
+            // --- Operations floor fittings ----------------------------------------
+            // Station-wide power routing and the secondary radio. Local generator
+            // electrics live in the shed; the routine station radio lives in Stores.
             Cube("Lighthouse_StationSwitchboard", parent,
-                new Vector3(-4.2f, TierLighthouse + 2.4f, 33.4f), new Vector3(2.4f, 2f, 0.35f), _metal);
+                new Vector3(-4.5f, OpsFloor + 1.2f, 38f), new Vector3(0.35f, 2f, 2.4f), _metal);
             Cube("Lighthouse_EmergencyRadio", parent,
-                new Vector3(4.2f, TierLighthouse + 1.5f, 33.4f), new Vector3(1.6f, 1.2f, 0.7f), _metal);
-
-            Cube("Lighthouse_Balcony", parent, pos + Vector3.up * (y + 0.15f),
-                new Vector3(12.4f, 0.3f, 12.4f), _metal);
-            Cylinder("Lighthouse_L3_LanternRoom", parent, pos + Vector3.up * (y + 1.9f), 4.0f, 3.6f, _metal);
-            y += 3.6f;
-            Cylinder("Lighthouse_Cap", parent, pos + Vector3.up * (y + 0.7f), 4.2f, 1.4f, _metal);
+                new Vector3(4.5f, OpsFloor + 1f, 38f), new Vector3(0.7f, 1.2f, 1.6f), _metal);
+            Cube("Lighthouse_BeaconConsole", parent,
+                new Vector3(0f, OpsFloor + 0.6f, 42f), new Vector3(2.4f, 1.2f, 0.8f), _metal);
 
             // Regraded to the broad stair's climb: base pulled back to z 21.6 so the
             // 4 m rise is taken over a 10.4 m run instead of 6 m.
@@ -831,6 +901,107 @@ namespace LastBeacon.Editor
                 new Vector3(-7.75f, TierLighthouse + 0.55f, CompoundNorth), new Vector3(8.5f, 1.1f, 0.5f), _concrete);
             Cube("Retain_Knoll_East", parent,
                 new Vector3(7.75f, TierLighthouse + 0.55f, CompoundNorth), new Vector3(8.5f, 1.1f, 0.5f), _concrete);
+        }
+
+        /// <summary>A hollow cylindrical wall, optionally with an angular gap in it.</summary>
+        static ProBuilderMesh RingWall(string name, Transform parent, float innerR, float outerR,
+            float yMin, float yMax, float fromDeg, float toDeg, Material material)
+        {
+            var pos = new List<Vector3>();
+            var faces = new List<Face>();
+            AppendArcWall(pos, faces, innerR, outerR, yMin, yMax, fromDeg, toDeg);
+            return Mesh(name, parent, pos, faces, material);
+        }
+
+        /// <summary>
+        /// An arc of wall between two radii, as a run of prisms. Bearings are degrees
+        /// clockwise from north, so 180 faces the compound.
+        /// </summary>
+        static void AppendArcWall(List<Vector3> pos, List<Face> faces, float innerR, float outerR,
+            float yMin, float yMax, float fromDeg, float toDeg)
+        {
+            int segments = Mathf.Max(2, Mathf.RoundToInt(Mathf.Abs(toDeg - fromDeg) / 11.25f));
+            for (int i = 0; i < segments; i++)
+            {
+                float a0 = Mathf.Lerp(fromDeg, toDeg, i / (float)segments);
+                float a1 = Mathf.Lerp(fromDeg, toDeg, (i + 1) / (float)segments);
+                AppendQuadPrism(pos, faces,
+                    Bearing(a0, outerR), Bearing(a0, innerR),
+                    Bearing(a1, innerR), Bearing(a1, outerR), yMin, yMax);
+            }
+        }
+
+        /// <summary>Winders around a newel: each tread is one wedge.</summary>
+        static ProBuilderMesh SpiralStair(string name, Transform parent, float fromY, float toY,
+            float innerR, float outerR, float startDeg, float sweepDeg, int steps)
+        {
+            float riser = (toY - fromY) / steps;
+            float perStep = sweepDeg / steps;
+            var pos = new List<Vector3>();
+            var faces = new List<Face>();
+
+            for (int i = 0; i < steps; i++)
+            {
+                float top = fromY + (i + 1) * riser;
+                float a0 = startDeg + i * perStep;
+                float a1 = a0 + perStep;
+                AppendQuadPrism(pos, faces,
+                    Bearing(a0, outerR), Bearing(a0, innerR),
+                    Bearing(a1, innerR), Bearing(a1, outerR), top - 0.28f, top);
+            }
+
+            return Mesh(name, parent, pos, faces, _concrete);
+        }
+
+        /// <summary>The gallery deck, built as four beams so the flight passes through.</summary>
+        static void BalconyRing(Transform parent, float outer, float inner, float yMin, float yMax)
+        {
+            float o = outer / 2f, n = inner / 2f;
+            var pos = new List<Vector3>();
+            var faces = new List<Face>();
+            AppendBox(pos, faces, new Vector3(-o, yMin, -o), new Vector3(o, yMax, -n));
+            AppendBox(pos, faces, new Vector3(-o, yMin, n), new Vector3(o, yMax, o));
+            AppendBox(pos, faces, new Vector3(-o, yMin, -n), new Vector3(-n, yMax, n));
+            AppendBox(pos, faces, new Vector3(n, yMin, -n), new Vector3(o, yMax, n));
+            Mesh("Lighthouse_Balcony", parent, pos, faces, _metal);
+        }
+
+        static Vector2 Bearing(float degrees, float radius) => new Vector2(
+            Mathf.Sin(degrees * Mathf.Deg2Rad) * radius,
+            Mathf.Cos(degrees * Mathf.Deg2Rad) * radius);
+
+        /// <summary>Finishes an accumulated vertex/face list, centred on the lighthouse.</summary>
+        static ProBuilderMesh Mesh(string name, Transform parent, List<Vector3> pos, List<Face> faces,
+            Material material)
+        {
+            var pb = ProBuilderMesh.Create(pos, faces);
+            pb.gameObject.name = name;
+            pb.transform.SetParent(parent, false);
+            pb.transform.position = new Vector3(LighthouseXZ.x, 0f, LighthouseXZ.y);
+            Finish(pb, material);
+            return pb;
+        }
+
+        /// <summary>
+        /// Extrudes a convex quad, given anticlockwise in XZ, between two heights.
+        /// Wound to match AppendBox and PolygonDeck.
+        /// </summary>
+        static void AppendQuadPrism(List<Vector3> pos, List<Face> faces,
+            Vector2 a, Vector2 b, Vector2 c, Vector2 d, float yMin, float yMax)
+        {
+            int i = pos.Count;
+            foreach (var p in new[] { a, b, c, d })
+                pos.Add(new Vector3(p.x, yMax, p.y));
+            foreach (var p in new[] { a, b, c, d })
+                pos.Add(new Vector3(p.x, yMin, p.y));
+
+            faces.Add(new Face(new[] { i, i + 2, i + 1, i, i + 3, i + 2 }));
+            faces.Add(new Face(new[] { i + 4, i + 5, i + 6, i + 4, i + 6, i + 7 }));
+            for (int k = 0; k < 4; k++)
+            {
+                int j = (k + 1) % 4;
+                faces.Add(new Face(new[] { i + k, i + j, i + 4 + j, i + k, i + 4 + j, i + 4 + k }));
+            }
         }
 
         public static Vector3 LanternCentre =>
@@ -911,11 +1082,11 @@ namespace LastBeacon.Editor
 
             Marker(parent, "ShiftBell_Point", new Vector3(3.8f, TierCompound + 1.4f, 22.4f), control,
                 "Ring to end the shift. Outdoors on purpose - a group ritual (GDD 15).");
-            Marker(parent, "BeaconControl_Point", new Vector3(0f, TierLighthouse + 1.4f, 32.6f), control,
+            Marker(parent, "BeaconControl_Point", new Vector3(0f, TierLighthouse + 1.4f, 41.2f), control,
                 "Beacon controls, Operations floor.");
-            Marker(parent, "StationPower_Point", new Vector3(-4.2f, TierLighthouse + 1.7f, 33.4f), control,
+            Marker(parent, "StationPower_Point", new Vector3(-3.9f, TierLighthouse + 1.7f, 38f), control,
                 "Station power routing and status. The shed MAKES power; this ROUTES it.");
-            Marker(parent, "Radio_Emergency_Point", new Vector3(4.2f, TierLighthouse + 1.7f, 33.4f), control,
+            Marker(parent, "Radio_Emergency_Point", new Vector3(3.9f, TierLighthouse + 1.5f, 38f), control,
                 "Secondary radio: emergency, coast guard, beacon traffic.");
 
             Marker(parent, "Courtyard_Centre", WpYardCentre + Vector3.up * 0.2f,
