@@ -116,12 +116,16 @@ namespace LastBeacon.Editor
 
         public static readonly DoorwaySpec[] Doorways =
         {
-            new DoorwaySpec("Shed",     new Vector2(-18f, 13.5f),   15f,  5f,   0f,   3.5f, 3.2f),
-            new DoorwaySpec("Workshop", new Vector2(-18.8f, 27.2f), 15f,  5.5f, -2.5f, 1.6f, 2.2f),
-            new DoorwaySpec("Stores",   new Vector2(18f, 7.8f),    -20f, -4.5f, 1.5f, 1.6f, 2.2f),
-            // The porch raises the threshold 0.3 m, so the opening is cut that much
-            // taller to keep 2.2 m clear above what you actually stand on.
-            new DoorwaySpec("House",    new Vector2(18f, 20f),       0f, -6f,   0f,   1.4f, 2.2f, 0.3f)
+            // Mirrored-reference layout. Industrial pair EAST, domestic pair WEST.
+            // Generator: broad frontage turned W onto the yard, the readable workspace.
+            new DoorwaySpec("Shed",     new Vector2(17f, 13f),     -5f, -5f,   0f,   3.5f, 3.2f),
+            // Workshop: side entrance into a sheltered nook, deliberately not a
+            // second broad frontage.
+            new DoorwaySpec("Workshop", new Vector2(19f, 26.2f),  -17f, -5.5f, -2.5f, 1.6f, 2.2f),
+            // Stores: recessed, angled to acknowledge the yard AND the gate arrival.
+            new DoorwaySpec("Stores",   new Vector2(-17.5f, 8.5f), 18f,  4.5f, 1.5f, 1.6f, 2.2f),
+            // House: porch onto the yard; the sill is carried up with the opening.
+            new DoorwaySpec("House",    new Vector2(-18f, 20.5f),  -3f,  6f,   0f,   1.4f, 2.2f, 0.3f)
         };
 
         /// <summary>Lighthouse tower centre. Unchanged, and must stay unchanged.</summary>
@@ -608,9 +612,14 @@ namespace LastBeacon.Editor
                 new Vector3(0.6f, 3.2f, 0.7f), _concrete);
             Cube("InnerGate_Post_East", gate, new Vector3(-3.4f, TierCompound + 1.6f, CompoundSouth),
                 new Vector3(0.6f, 3.2f, 0.7f), _concrete);
-            var leaf = Cube("InnerGate_Leaf", gate, new Vector3(-8.7f, TierCompound + 1.1f, CompoundSouth + 2.2f),
+            // Hinged on the EAST post, standing ajar rather than flat open. The
+            // route enters on the gate centreline and then angles north-east toward
+            // the yard, so a leaf swung flat north converges with the walking
+            // corridor and clipped it by 0.27 m. Swung to 65 degrees it opens away
+            // from the route and clears it by about 1.5 m, still on the east post.
+            var leaf = Cube("InnerGate_Leaf", gate, new Vector3(-2.40f, TierCompound + 1.1f, CompoundSouth + 2.01f),
                 new Vector3(GateOpening - 0.2f, 2.2f, 0.15f), _metal);
-            leaf.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            leaf.transform.rotation = Quaternion.Euler(0f, -65f, 0f);
         }
 
         // --------------------------------------------------- tier 3 main compound
@@ -629,175 +638,177 @@ namespace LastBeacon.Editor
         /// power while the lighthouse routes and monitors it. The standalone
         /// electrical building is gone; nothing replaces it.
         /// </summary>
+        // --- Approved compound layout ----------------------------------------
+        static readonly Vector2 ShedC = new Vector2(17f, 13f);          // Generator
+        static readonly Vector2 WorkC = new Vector2(19f, 26.2f);
+        static readonly Vector2 StoresC = new Vector2(-17.5f, 8.5f);
+        static readonly Vector2 HouseC = new Vector2(-18f, 20.5f);
+        const float ShedYaw = -5f, WorkYaw = -17f, StoresYaw = 18f, HouseYaw = -3f;
+
+        /// <summary>
+        /// The yard is formed BETWEEN the buildings: a 10 m throat at the gate that
+        /// widens to about 20 m across the working centre, with an irregular north
+        /// edge at the lighthouse stair. Convex, because PolygonDeck fans it.
+        /// </summary>
+        static readonly Vector2[] YardOutline =
+        {
+            new Vector2(-7.5f, 6.5f), new Vector2(2.5f, 6.5f), new Vector2(9.5f, 11.5f),
+            new Vector2(10.5f, 19.5f), new Vector2(6.5f, 25f), new Vector2(-3f, 25.5f),
+            new Vector2(-10f, 21f), new Vector2(-10.5f, 12.5f)
+        };
+
         static void BuildCompound(Transform parent)
         {
-            // Cut pentagon, not a rectangle: the south-west corner is chamfered to
-            // tighten the gate approach, the north-east corner to open toward the
-            // lighthouse stair. Bounding box stays 18 x 14.
-            PolygonDeck("MainYard", parent, new[]
-            {
-                new Vector2(-9f, 13f),
-                new Vector2(-6f, 10f),
-                new Vector2(9f, 10f),
-                new Vector2(9f, 21f),
-                new Vector2(6.5f, 24f),
-                new Vector2(-9f, 24f)
-            }, TierCompound + 0.04f, 0.5f, _ground);
+            PolygonDeck("MainYard", parent, YardOutline, TierCompound + 0.04f, 0.5f, _ground);
 
             BuildCourtyardEdges(parent);
             BuildInnerGateThroat(parent);
 
-            // --- Generator / Utility Shed: MAKE POWER, squat and industrial -------
-            var shedC = new Vector2(-18f, 13.5f);
-            const float shedYaw = 15f;
+            // ================= EAST: industrial ==================================
+            // --- Generator / Utility Shed: MAKE POWER, broad frontage onto the yard
             var shed = NewGroup("GeneratorShed", parent);
-            Shell("Shed_Body", shed, shedC, new Vector2(10f, 8f), 4.2f, shedYaw, Doorways[0], _concrete);
-            Roof("Shed_Roof", shed, shedC, new Vector2(10.6f, 8.6f), 4.2f, 1f, _metal, shedYaw);
-            // Broad opening, turned east-south-east: reads from the yard AND from a
-            // player arriving through the Inner Gate.
+            Shell("Shed_Body", shed, ShedC, new Vector2(10f, 8f), 4.2f, ShedYaw, Doorways[0], _concrete);
+            Roof("Shed_Roof", shed, ShedC, new Vector2(10.6f, 8.6f), 4.2f, 1f, _metal, ShedYaw);
             DoorLeaves(shed, Doorways[0], _metal, true);
-            Prop("Generator_Body", shed, shedC, shedYaw, new Vector2(-0.5f, 0f), TierCompound + 0.9f,
+            Prop("Generator_Body", shed, ShedC, ShedYaw, new Vector2(0.5f, 0f), TierCompound + 0.9f,
                 new Vector3(3.2f, 1.8f, 2f), _metal);
-            Prop("Generator_FuelCap", shed, shedC, shedYaw, new Vector2(-1.7f, 0f), TierCompound + 1.95f,
+            Prop("Generator_FuelCap", shed, ShedC, ShedYaw, new Vector2(1.7f, 0f), TierCompound + 1.95f,
                 new Vector3(0.7f, 0.3f, 0.7f), _plank);
-            Prop("Generator_Breaker", shed, shedC, shedYaw, new Vector2(-3.5f, -2.5f), TierCompound + 1.5f,
+            Prop("Generator_Breaker", shed, ShedC, ShedYaw, new Vector2(3.5f, -2.5f), TierCompound + 1.5f,
                 new Vector3(0.9f, 1.4f, 0.35f), _metal);
-            Prop("Generator_FusePanel", shed, shedC, shedYaw, new Vector2(-3.5f, -1.1f), TierCompound + 1.5f,
+            Prop("Generator_FusePanel", shed, ShedC, ShedYaw, new Vector2(3.5f, -1.1f), TierCompound + 1.5f,
                 new Vector3(0.9f, 1.2f, 0.35f), _metal);
 
-            // Lean-to over the fuel drums, 1.4 m deep. Any deeper and the service
-            // passage drops below the 3.5 m clear width it needs.
-            Prop("Shed_LeanToRoof", shed, shedC, shedYaw, new Vector2(0f, 4.7f), TierCompound + 2.9f,
+            // Lean-to on the north face, opening into the service space.
+            Prop("Shed_LeanToRoof", shed, ShedC, ShedYaw, new Vector2(0f, 4.7f), TierCompound + 2.9f,
                 new Vector3(6f, 0.2f, 1.4f), _metal);
-            Prop("Shed_LeanToPost_W", shed, shedC, shedYaw, new Vector2(-2.8f, 5.3f), TierCompound + 1.4f,
+            Prop("Shed_LeanToPost_W", shed, ShedC, ShedYaw, new Vector2(-2.8f, 5.3f), TierCompound + 1.4f,
                 new Vector3(0.2f, 2.8f, 0.2f), _wood);
-            Prop("Shed_LeanToPost_E", shed, shedC, shedYaw, new Vector2(2.8f, 5.3f), TierCompound + 1.4f,
+            Prop("Shed_LeanToPost_E", shed, ShedC, ShedYaw, new Vector2(2.8f, 5.3f), TierCompound + 1.4f,
                 new Vector3(0.2f, 2.8f, 0.2f), _wood);
-            Prop("Shed_FuelDrum_A", shed, shedC, shedYaw, new Vector2(-1.6f, 4.7f), TierCompound + 0.45f,
+            Prop("Shed_FuelDrum_A", shed, ShedC, ShedYaw, new Vector2(-1.6f, 4.7f), TierCompound + 0.45f,
                 new Vector3(0.8f, 0.9f, 0.8f), _metal);
-            Prop("Shed_FuelDrum_B", shed, shedC, shedYaw, new Vector2(-0.6f, 4.7f), TierCompound + 0.45f,
+            Prop("Shed_FuelDrum_B", shed, ShedC, ShedYaw, new Vector2(-0.6f, 4.7f), TierCompound + 0.45f,
                 new Vector3(0.8f, 0.9f, 0.8f), _metal);
 
-            // --- Workshop: REPAIR / DEFENSE, approached through a work alcove -----
-            var workC = new Vector2(-18.8f, 27.2f);
-            const float workYaw = 15f;
+            // --- Workshop: set back north, angled, side entrance into a nook ------
             var workshop = NewGroup("Workshop", parent);
-            Shell("Workshop_Body", workshop, workC, new Vector2(11f, 8f), 4.5f, workYaw, Doorways[1], _wood);
-            Roof("Workshop_Roof", workshop, workC, new Vector2(11.6f, 8.6f), 4.5f, 1.8f, _metal, workYaw);
-            // Side-facing threshold in a corner nook, not a door in a flat wall.
+            Shell("Workshop_Body", workshop, WorkC, new Vector2(11f, 8f), 4.5f, WorkYaw, Doorways[1], _wood);
+            Roof("Workshop_Roof", workshop, WorkC, new Vector2(11.6f, 8.6f), 4.5f, 1.8f, _metal, WorkYaw);
             DoorLeaves(workshop, Doorways[1], _plank, false);
-            Prop("Workshop_AlcoveCanopy", workshop, workC, workYaw, new Vector2(6.9f, -2.5f), TierCompound + 2.6f,
+            Prop("Workshop_AlcoveCanopy", workshop, WorkC, WorkYaw, new Vector2(-6.9f, -2.5f), TierCompound + 2.6f,
                 new Vector3(3f, 0.2f, 3f), _metal);
-            Prop("Workshop_AlcovePost", workshop, workC, workYaw, new Vector2(8.2f, -3.8f), TierCompound + 1.3f,
+            Prop("Workshop_AlcovePost", workshop, WorkC, WorkYaw, new Vector2(-8.2f, -3.8f), TierCompound + 1.3f,
                 new Vector3(0.2f, 2.6f, 0.2f), _wood);
-            Prop("Workshop_BenchProp", workshop, workC, workYaw, new Vector2(6.6f, -1.2f), TierCompound + 0.5f,
+            Prop("Workshop_BenchProp", workshop, WorkC, WorkYaw, new Vector2(-6.6f, -1.2f), TierCompound + 0.5f,
                 new Vector3(2.4f, 1f, 1f), _plank);
-            Prop("Workshop_ToolRack", workshop, workC, workYaw, new Vector2(-1f, 3.6f), TierCompound + 1.5f,
+            Prop("Workshop_ToolRack", workshop, WorkC, WorkYaw, new Vector2(1f, 3.6f), TierCompound + 1.5f,
                 new Vector3(4f, 1.6f, 0.3f), _plank);
-            Prop("Workshop_ScrapBin", workshop, workC, workYaw, new Vector2(-4f, 3f), TierCompound + 0.5f,
+            Prop("Workshop_ScrapBin", workshop, WorkC, WorkYaw, new Vector2(4f, 3f), TierCompound + 0.5f,
                 new Vector3(1.8f, 1f, 1.8f), _metal);
 
-            // --- Stores / Radio Office: compact, addressing the arrival diagonal --
-            var storesC = new Vector2(18f, 7.8f);
-            const float storesYaw = -20f;
+            // --- the service space between them, at its east mouth ----------------
+            var service = NewGroup("ServiceSpace", parent);
+            Cube("Service_ScrapPile", service, new Vector3(22.6f, TierCompound + 0.5f, 20.6f),
+                new Vector3(2.2f, 1f, 1.8f), _metal);
+            Cube("Service_PipeRun", service, new Vector3(23.6f, TierCompound + 0.45f, 22.8f),
+                new Vector3(1.6f, 0.9f, 2.4f), _metal);
+            Cube("Service_SparePartsCrate", service, new Vector3(21.4f, TierCompound + 0.6f, 23.4f),
+                new Vector3(1.4f, 1.2f, 1.4f), _plank);
+
+            // ================= WEST: domestic / administrative ====================
+            // --- Stores / Radio: closest to the gate, angled to the arrival --------
             var stores = NewGroup("StoresRadio", parent);
-            Shell("Stores_Body", stores, storesC, new Vector2(9f, 7f), 3.8f, storesYaw, Doorways[2], _wood);
-            Roof("Stores_Roof", stores, storesC, new Vector2(9.6f, 7.6f), 3.8f, 1.2f, _metal, storesYaw);
-            // Recessed doorway: half toward the yard, half toward the Inner Gate.
+            Shell("Stores_Body", stores, StoresC, new Vector2(9f, 7f), 3.8f, StoresYaw, Doorways[2], _wood);
+            Roof("Stores_Roof", stores, StoresC, new Vector2(9.6f, 7.6f), 3.8f, 1.2f, _metal, StoresYaw);
             DoorLeaves(stores, Doorways[2], _plank, false);
-            // The recess hood now sits OUTSIDE the wall it used to be buried in.
-            Prop("Stores_DoorRecess", stores, storesC, storesYaw, new Vector2(-5.4f, 1.5f), TierCompound + 2.4f,
+            Prop("Stores_DoorRecess", stores, StoresC, StoresYaw, new Vector2(5.4f, 1.5f), TierCompound + 2.4f,
                 new Vector3(1.4f, 0.2f, 2.4f), _plank);
-            Prop("Stores_RadioSet", stores, storesC, storesYaw, new Vector2(3f, -2f), TierCompound + 1.1f,
+            Prop("Stores_RadioSet", stores, StoresC, StoresYaw, new Vector2(-3f, -2f), TierCompound + 1.1f,
                 new Vector3(1.6f, 1.2f, 0.8f), _metal);
-            Prop("Stores_ManifestDesk", stores, storesC, storesYaw, new Vector2(3f, 0f), TierCompound + 0.5f,
+            Prop("Stores_ManifestDesk", stores, StoresC, StoresYaw, new Vector2(-3f, 0f), TierCompound + 0.5f,
                 new Vector3(1.6f, 1f, 1.2f), _plank);
-            Prop("Cabinet_Ammunition", stores, storesC, storesYaw, new Vector2(-3f, -2.2f), TierCompound + 0.8f,
+            Prop("Cabinet_Ammunition", stores, StoresC, StoresYaw, new Vector2(3f, -2.2f), TierCompound + 0.8f,
                 new Vector3(1.8f, 1.6f, 0.8f), _metal);
-            Prop("Stores_DeliveryShelf", stores, storesC, storesYaw, new Vector2(0f, 2.6f), TierCompound + 0.8f,
+            Prop("Stores_DeliveryShelf", stores, StoresC, StoresYaw, new Vector2(0f, 2.6f), TierCompound + 0.8f,
                 new Vector3(3f, 1.6f, 0.8f), _plank);
 
-            // --- Keeper's House: the one square-on building ----------------------
-            var houseC = new Vector2(18f, 20f);
+            // --- Keeper's House: porch onto the yard, the domestic frontage --------
             var house = NewGroup("KeepersHouse", parent);
-            Shell("House_Body", house, houseC, new Vector2(12f, 9f), 5.5f, 0f, Doorways[3], _wood);
-            Roof("House_Roof", house, houseC, new Vector2(12.6f, 9.6f), 5.5f, 2.6f, _plank);
+            Shell("House_Body", house, HouseC, new Vector2(12f, 9f), 5.5f, HouseYaw, Doorways[3], _wood);
+            Roof("House_Roof", house, HouseC, new Vector2(12.6f, 9.6f), 5.5f, 2.6f, _plank, HouseYaw);
             DoorLeaves(house, Doorways[3], _plank, false);
-            // Raised porch with a canopy: the domestic threshold.
-            Cube("House_Porch", house, new Vector3(10.8f, TierCompound + 0.15f, 20f),
+            Prop("House_Porch", house, HouseC, HouseYaw, new Vector2(7.4f, 0f), TierCompound + 0.15f,
                 new Vector3(2.8f, 0.3f, 4.2f), _plank);
-            Cube("House_PorchCanopy", house, new Vector3(10.8f, TierCompound + 2.8f, 20f),
+            Prop("House_PorchCanopy", house, HouseC, HouseYaw, new Vector2(7.4f, 0f), TierCompound + 2.8f,
                 new Vector3(2.8f, 0.2f, 4.2f), _plank);
-            Cube("House_PorchPost_N", house, new Vector3(9.6f, TierCompound + 1.5f, 21.8f),
+            Prop("House_PorchPost_N", house, HouseC, HouseYaw, new Vector2(8.6f, 1.8f), TierCompound + 1.5f,
                 new Vector3(0.2f, 2.6f, 0.2f), _wood);
-            Cube("House_PorchPost_S", house, new Vector3(9.6f, TierCompound + 1.5f, 18.2f),
+            Prop("House_PorchPost_S", house, HouseC, HouseYaw, new Vector2(8.6f, -1.8f), TierCompound + 1.5f,
                 new Vector3(0.2f, 2.6f, 0.2f), _wood);
-            Cube("House_Window_S", house, new Vector3(15f, TierCompound + 2.4f, 15.4f),
-                new Vector3(1.4f, 1.4f, 0.3f), _metal);
-            Cube("Cabinet_Medical", house, new Vector3(12.6f, TierCompound + 0.8f, 18f),
+            Prop("House_Window_N", house, HouseC, HouseYaw, new Vector2(-5.9f, 3f), TierCompound + 2.4f,
+                new Vector3(0.3f, 1.4f, 1.4f), _metal);
+            Prop("House_Window_S", house, HouseC, HouseYaw, new Vector2(-5.9f, -3f), TierCompound + 2.4f,
+                new Vector3(0.3f, 1.4f, 1.4f), _metal);
+            Prop("Cabinet_Medical", house, HouseC, HouseYaw, new Vector2(5.4f, -2f), TierCompound + 0.8f,
                 new Vector3(0.8f, 1.6f, 1.6f), _metal);
-            Cube("House_StationClock", house, new Vector3(12.6f, TierCompound + 2.6f, 22f),
+            Prop("House_StationClock", house, HouseC, HouseYaw, new Vector2(5.4f, 2f), TierCompound + 2.6f,
                 new Vector3(0.25f, 0.9f, 0.9f), _plank);
-            Cube("House_IncidentBoard", house, new Vector3(12.6f, TierCompound + 1.6f, 23.4f),
+            Prop("House_IncidentBoard", house, HouseC, HouseYaw, new Vector2(5.4f, 3.4f), TierCompound + 1.6f,
                 new Vector3(0.2f, 1.4f, 2f), _plank);
-            Cube("House_Bunks", house, new Vector3(21.6f, TierCompound + 0.6f, 22f),
+            Prop("House_Bunks", house, HouseC, HouseYaw, new Vector2(-3.6f, 2f), TierCompound + 0.6f,
                 new Vector3(3.6f, 1.2f, 2f), _wood);
 
-            // --- Courtyard props, outdoors per the GDD ---------------------------
+            // --- Courtyard props, kept off every doorway sightline -----------------
             var yardProps = NewGroup("CourtyardProps", parent);
-            Cube("Yard_SupplyCrate_A", yardProps, new Vector3(6.5f, TierCompound + 0.7f, 21.5f),
+            Cube("Yard_SupplyCrate_A", yardProps, new Vector3(7f, TierCompound + 0.7f, 10.5f),
                 new Vector3(1.3f, 1.4f, 1.3f), _plank);
-            Cube("Yard_SupplyCrate_B", yardProps, new Vector3(6.5f, TierCompound + 0.7f, 20.2f),
+            Cube("Yard_SupplyCrate_B", yardProps, new Vector3(7f, TierCompound + 0.7f, 11.8f),
                 new Vector3(1.3f, 1.4f, 1.3f), _plank);
-            Cube("Yard_DeliveryCart", yardProps, new Vector3(-7.6f, TierCompound + 0.5f, 11.6f),
+            Cube("Yard_DeliveryCart", yardProps, new Vector3(-4.5f, TierCompound + 0.5f, 21f),
                 new Vector3(1.4f, 1f, 2.2f), _wood);
         }
 
         /// <summary>
-        /// Framed approach from the Inner Gate: a rock spur east and a retaining
-        /// edge west narrow the way to about 9 m before the yard opens to 18 m.
-        /// Nothing sits on the traversal line itself.
+        /// Approach from the Inner Gate. The rock spur and retaining edge that used
+        /// to pinch it have been removed; the gate posts and the 10 m south end of
+        /// the yard polygon carry the compression now.
         /// </summary>
         static void BuildInnerGateThroat(Transform parent)
         {
             var throat = NewGroup("InnerGateThroat", parent);
 
-            Slab("Rock_GateSpur", throat, 1f, 5f, 5f, 9f,
-                TierCompound, TierCompound + 2.2f, _rock);
-            Cube("Rock_GateSpurCap", throat, new Vector3(3.4f, TierCompound + 2.5f, 7.4f),
-                new Vector3(3f, 1.2f, 3.2f), _rock);
-            Slab("Yard_RetainSouthWest", throat, -10f, -8f, 5f, 9f,
-                TierCompound, TierCompound + 1.2f, _concrete);
+            // Rock_GateSpur, Rock_GateSpurCap and Yard_RetainSouthWest removed.
+            // The throat is now framed by the gate posts and the narrowed south end
+            // of the yard polygon alone.
             Cube("Yard_GateLampPost", throat, new Vector3(-7.4f, TierCompound + 1.8f, 9.4f),
                 new Vector3(0.2f, 3.6f, 0.2f), _metal);
             Cube("Yard_GateLampHead", throat, new Vector3(-7.4f, TierCompound + 3.7f, 9.4f),
                 new Vector3(0.5f, 0.4f, 0.5f), _metal);
         }
 
-        /// <summary>
-        /// Perimeter irregularity for the yard: kerbs, a utility corner and a
-        /// service strip, all 0.2-0.5 m and all outside the central movement space.
-        /// </summary>
+        /// <summary>Kerbs and corners following the new irregular yard edge.</summary>
         static void BuildCourtyardEdges(Transform parent)
         {
             var edges = NewGroup("CourtyardEdges", parent);
 
-            Slab("Yard_KerbWest", edges, -9.5f, -9f, 11f, 23f,
+            Slab("Yard_KerbWest", edges, -10.9f, -10.4f, 13f, 21f,
                 TierCompound, TierCompound + 0.35f, _concrete);
-            Slab("Yard_KerbEast", edges, 9f, 9.5f, 12.5f, 22f,
+            Slab("Yard_KerbEast", edges, 10.1f, 10.6f, 12.5f, 19.5f,
                 TierCompound, TierCompound + 0.3f, _concrete);
-            Slab("Yard_UtilityCornerNW", edges, -9f, -5.5f, 21f, 24f,
+            Slab("Yard_UtilityCornerNW", edges, -9.5f, -6f, 21.5f, 24.5f,
                 TierCompound, TierCompound + 0.25f, _ground);
-            Slab("Yard_ServiceStripSE", edges, 5.5f, 9f, 10f, 13.5f,
+            Slab("Yard_ServiceStripSE", edges, 4.5f, 8.5f, 8f, 11.5f,
                 TierCompound, TierCompound + 0.2f, _ground);
-            Slab("Yard_RetainNorth_W", edges, -5f, -2.8f, 23.6f, 24f,
+            // Split for the lighthouse stair, which lands between them.
+            Slab("Yard_RetainNorth_W", edges, -6f, -2.8f, 24.9f, 25.3f,
                 TierCompound, TierCompound + 0.45f, _concrete);
-            Slab("Yard_RetainNorth_E", edges, 2.8f, 5f, 23.6f, 24f,
+            Slab("Yard_RetainNorth_E", edges, 2.8f, 6f, 24.7f, 25.1f,
                 TierCompound, TierCompound + 0.45f, _concrete);
 
-            Cube("Rock_YardEdge_NE", edges, new Vector3(10.2f, TierCompound + 0.2f, 23.4f),
+            Cube("Rock_YardEdge_NE", edges, new Vector3(10.8f, TierCompound + 0.2f, 22.6f),
                 new Vector3(2.4f, 0.8f, 2f), _rock);
-            Cube("Rock_YardEdge_SW", edges, new Vector3(-10.4f, TierCompound + 0.25f, 10.6f),
+            Cube("Rock_YardEdge_SW", edges, new Vector3(-10.8f, TierCompound + 0.25f, 11f),
                 new Vector3(2.8f, 0.9f, 2.4f), _rock);
         }
 
@@ -1023,38 +1034,38 @@ namespace LastBeacon.Editor
             const BlockoutMarker.MarkerKind defense = BlockoutMarker.MarkerKind.DefenseSocket;
             const BlockoutMarker.MarkerKind control = BlockoutMarker.MarkerKind.SystemControl;
 
-            Marker(parent, "Generator_FuelPoint", At(new Vector2(-18f, 13.5f), 15f, new Vector2(-1.7f, 0f), TierCompound + 2.1f), task,
+            Marker(parent, "Generator_FuelPoint", At(ShedC, ShedYaw, new Vector2(1.7f, 0f), TierCompound + 2.1f), task,
                 "Pour fuel can here.");
-            Marker(parent, "Generator_StartPoint", At(new Vector2(-18f, 13.5f), 15f, new Vector2(1f, 0.9f), TierCompound + 1.4f), task,
+            Marker(parent, "Generator_StartPoint", At(ShedC, ShedYaw, new Vector2(-1f, 0.9f), TierCompound + 1.4f), task,
                 "Prime and start.");
-            Marker(parent, "Generator_RepairPoint", At(new Vector2(-18f, 13.5f), 15f, new Vector2(-0.5f, -1.5f), TierCompound + 1.0f), task,
+            Marker(parent, "Generator_RepairPoint", At(ShedC, ShedYaw, new Vector2(0.5f, -1.5f), TierCompound + 1.0f), task,
                 "Damage repair panel.");
-            Marker(parent, "Workshop_Bench", At(new Vector2(-18.8f, 27.2f), 15f, new Vector2(6.6f, -1.2f), TierCompound + 1.1f), task,
+            Marker(parent, "Workshop_Bench", At(WorkC, WorkYaw, new Vector2(-6.6f, -1.2f), TierCompound + 1.1f), task,
                 "Trap repair, ammo crafting (GDD 24).");
             // Fuse panel follows the generator: shed electrics are generator-local.
-            Marker(parent, "Fuse_Storage", At(new Vector2(-18f, 13.5f), 15f, new Vector2(-3.5f, -1.1f), TierCompound + 1.5f), task,
+            Marker(parent, "Fuse_Storage", At(ShedC, ShedYaw, new Vector2(3.5f, -1.1f), TierCompound + 1.5f), task,
                 "Generator fuse panel. Station-wide routing is in the lighthouse.");
-            Marker(parent, "Generator_Breaker", At(new Vector2(-18f, 13.5f), 15f, new Vector2(-3.5f, -2.5f), TierCompound + 1.5f), task,
+            Marker(parent, "Generator_Breaker", At(ShedC, ShedYaw, new Vector2(3.5f, -2.5f), TierCompound + 1.5f), task,
                 "Generator breaker.");
 
             // --- Stores / Radio Office ------------------------------------------
-            Marker(parent, "Ammo_Storage", At(new Vector2(18f, 7.8f), -20f, new Vector2(-3f, -2.2f), TierCompound + 1.7f), task,
+            Marker(parent, "Ammo_Storage", At(StoresC, StoresYaw, new Vector2(3f, -2.2f), TierCompound + 1.7f), task,
                 "Ammunition cabinet, Stores.");
-            Marker(parent, "Radio_Point", At(new Vector2(18f, 7.8f), -20f, new Vector2(3f, -2f), TierCompound + 1.7f), control,
+            Marker(parent, "Radio_Point", At(StoresC, StoresYaw, new Vector2(-3f, -2f), TierCompound + 1.7f), control,
                 "Routine station radio: manifests, arrivals, weather, dock traffic.");
-            Marker(parent, "Manifest_Point", At(new Vector2(18f, 7.8f), -20f, new Vector2(3f, 0f), TierCompound + 1.1f), task,
+            Marker(parent, "Manifest_Point", At(StoresC, StoresYaw, new Vector2(-3f, 0f), TierCompound + 1.1f), task,
                 "Vessel manifest and expected-arrival records. Verify visitors here.");
-            Marker(parent, "Delivery_Records", At(new Vector2(18f, 7.8f), -20f, new Vector2(0f, 2.6f), TierCompound + 1.7f), task,
+            Marker(parent, "Delivery_Records", At(StoresC, StoresYaw, new Vector2(0f, 2.6f), TierCompound + 1.7f), task,
                 "Delivery inventory and spare parts.");
 
             // --- Keeper's House --------------------------------------------------
-            Marker(parent, "Medical_Storage", new Vector3(12.6f, TierCompound + 1.7f, 18f), task,
+            Marker(parent, "Medical_Storage", At(HouseC, HouseYaw, new Vector2(5.4f, -2f), TierCompound + 1.7f), task,
                 "Medical cabinet, Keeper's House.");
-            Marker(parent, "StationClock_Point", new Vector3(12.6f, TierCompound + 2.6f, 22f), control,
+            Marker(parent, "StationClock_Point", At(HouseC, HouseYaw, new Vector2(5.4f, 2f), TierCompound + 2.6f), control,
                 "Station clock and shift log.");
-            Marker(parent, "IncidentBoard_Point", new Vector3(12.6f, TierCompound + 1.6f, 23.4f),
+            Marker(parent, "IncidentBoard_Point", At(HouseC, HouseYaw, new Vector2(5.4f, 3.4f), TierCompound + 1.6f),
                 BlockoutMarker.MarkerKind.Landmark, "Incident board. Story and personal space.");
-            Marker(parent, "Bunks_Point", new Vector3(21.6f, TierCompound + 1.4f, 22f),
+            Marker(parent, "Bunks_Point", At(HouseC, HouseYaw, new Vector2(-3.6f, 2f), TierCompound + 1.4f),
                 BlockoutMarker.MarkerKind.Landmark, "Bunks and rest area.");
 
             // Inspection happens at the DOCK. The Main Gate is the controlled

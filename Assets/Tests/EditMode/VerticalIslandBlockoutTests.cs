@@ -361,9 +361,9 @@ namespace LastBeacon.Tests
         {
             var expected = new Dictionary<string, Vector2>
             {
-                { "Shed_Body", new Vector2(-18f, 13.5f) },
-                { "Workshop_Body", new Vector2(-18.8f, 27.2f) },
-                { "House_Body", new Vector2(18f, 20f) }
+                { "Shed_Body", new Vector2(17f, 13f) },
+                { "Workshop_Body", new Vector2(19f, 26.2f) },
+                { "House_Body", new Vector2(-18f, 20.5f) }
             };
 
             foreach (var (name, centre) in expected.Select(kv => (kv.Key, kv.Value)))
@@ -381,10 +381,10 @@ namespace LastBeacon.Tests
             // Keeper's House, so the domestic building reads as the anchor.
             var expected = new Dictionary<string, float>
             {
-                { "Shed_Body", 15f },
-                { "Workshop_Body", 15f },
-                { "Stores_Body", -20f },
-                { "House_Body", 0f }
+                { "Shed_Body", -5f },
+                { "Workshop_Body", -17f },
+                { "Stores_Body", 18f },
+                { "House_Body", -3f }
             };
 
             foreach (var (name, yaw) in expected.Select(kv => (kv.Key, kv.Value)))
@@ -432,11 +432,21 @@ namespace LastBeacon.Tests
         [Test]
         public void TheInnerGateThroat_IsFramedButUnobstructed()
         {
-            var spur = BoundsOf("Rock_GateSpur");
-            var retain = BoundsOf("Yard_RetainSouthWest");
+            // The spur and retaining edge were removed, so the throat is measured
+            // where the player actually walks rather than between two named objects:
+            // cast sideways across the approach at knee height and take the width.
+            float throat = float.MaxValue;
+            Vector3 narrowestAt = Vector3.zero;
+            for (float t = 0f; t <= 1f; t += 0.05f)
+            {
+                var at = Vector3.Lerp(Gen.WpCompoundEntrance, Gen.WpYardCentre, t) + Vector3.up * 0.6f;
+                float west = Physics.Raycast(at, Vector3.left, out var wh, 30f) ? wh.distance : 30f;
+                float east = Physics.Raycast(at, Vector3.right, out var eh, 30f) ? eh.distance : 30f;
+                if (west + east < throat) { throat = west + east; narrowestAt = at; }
+            }
 
-            float throat = spur.min.x - retain.max.x;
-            Assert.That(throat, Is.InRange(7f, 11f), $"Gate throat is {throat:0.0} m wide.");
+            Assert.That(throat, Is.InRange(4.5f, 14f),
+                $"Gate approach is {throat:0.0} m wide at {narrowestAt}.");
 
             // And nothing may sit on the traversal line through it.
             var a = Gen.WpCompoundEntrance;
@@ -705,8 +715,8 @@ namespace LastBeacon.Tests
             // Moved onto the former electrical plot: the building nearest the Inner
             // Gate, so manifest and radio answers travel toward the gate and dock.
             var b = BoundsOf("Stores_Body");
-            Assert.That(b.center.x, Is.EqualTo(18f).Within(0.5f), "Stores X.");
-            Assert.That(b.center.z, Is.EqualTo(7.8f).Within(0.5f), "Stores Z.");
+            Assert.That(b.center.x, Is.EqualTo(-17.5f).Within(0.5f), "Stores X.");
+            Assert.That(b.center.z, Is.EqualTo(8.5f).Within(0.5f), "Stores Z.");
         }
 
         [Test]

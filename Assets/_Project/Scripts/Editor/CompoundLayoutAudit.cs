@@ -145,10 +145,16 @@ namespace LastBeacon.Editor
             }
             Debug.Log($"[Compound] Service passage narrowest clear width {narrowest:0.00} m");
 
-            var spur = BoundsOf("Rock_GateSpur");
-            var retain = BoundsOf("Yard_RetainSouthWest");
-            Debug.Log($"[Compound] Inner Gate throat {spur.min.x - retain.max.x:0.0} m wide " +
-                      $"(retain to {retain.max.x:0.0}, spur from {spur.min.x:0.0})");
+            // Measured across the approach, now that the spur and retain wall are gone.
+            float gateThroat = float.MaxValue;
+            for (float t = 0f; t <= 1f; t += 0.05f)
+            {
+                var at = Vector3.Lerp(Gen.WpCompoundEntrance, Gen.WpYardCentre, t) + Vector3.up * 0.6f;
+                float w2 = Physics.Raycast(at, Vector3.left, out var wl, 30f) ? wl.distance : 30f;
+                float e2 = Physics.Raycast(at, Vector3.right, out var el, 30f) ? el.distance : 30f;
+                gateThroat = Mathf.Min(gateThroat, w2 + e2);
+            }
+            Debug.Log($"[Compound] Inner Gate approach narrowest clear width {gateThroat:0.00} m");
 
             foreach (var name in Bodies.Where(Exists))
             {
