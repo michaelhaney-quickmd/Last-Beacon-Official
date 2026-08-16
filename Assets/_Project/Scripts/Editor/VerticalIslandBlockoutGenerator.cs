@@ -1208,11 +1208,13 @@ namespace LastBeacon.Editor
             WarmLamp(group, "Lamp_CompoundGate", new Vector3(-6f, 20f, 2f), 20f, 8f);
 
             WarmLamp(group, "Lamp_Yard", new Vector3(0f, TierCompound + 6f, 17f), 32f, 9f);
-            WarmLamp(group, "Lamp_GeneratorShed", new Vector3(-13.2f, TierCompound + 3.6f, 14.8f), 16f, 6f);
-            WarmLamp(group, "Lamp_Workshop", new Vector3(-12.9f, TierCompound + 3.6f, 24.6f), 16f, 6f);
-            WarmLamp(group, "Lamp_KeepersHouse", new Vector3(12f, TierCompound + 4.4f, 20f), 16f, 5.5f);
-            WarmLamp(group, "Lamp_Stores", new Vector3(14.3f, TierCompound + 3.6f, 10.8f), 16f, 5.5f);
-            WarmLamp(group, "Lamp_Stores", new Vector3(14.3f, TierCompound + 3.6f, 10.8f), 16f, 5.5f);
+            // Follow the doorways. These were left at the pre-mirror positions, so
+            // every practical lamp was lighting the wrong side of the yard, and
+            // Lamp_Stores was emitted twice at the same point.
+            WarmLamp(group, "Lamp_GeneratorShed", new Vector3(11.2f, TierCompound + 3.6f, 12.6f), 16f, 6f);
+            WarmLamp(group, "Lamp_Workshop", new Vector3(13.6f, TierCompound + 3.6f, 21.9f), 16f, 6f);
+            WarmLamp(group, "Lamp_KeepersHouse", new Vector3(-11.2f, TierCompound + 4.4f, 20.9f), 16f, 5.5f);
+            WarmLamp(group, "Lamp_Stores", new Vector3(-11.9f, TierCompound + 3.6f, 8.3f), 16f, 5.5f);
 
             var pivot = new GameObject("Beacon_Pivot");
             pivot.transform.SetParent(group, false);
