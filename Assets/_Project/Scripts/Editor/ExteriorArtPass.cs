@@ -21,7 +21,7 @@ namespace LastBeacon.Editor
         const string Folder = "Assets/_Project/Art/Materials/ArtPass";
         const int W = 1600, H = 900;
 
-        static Material _terrainGround, _rock, _path, _wet, _moss, _ocean, _dockPlank;
+        static Material _terrainGround, _rock, _path, _wet, _moss, _ocean, _dockPlank, _dockWet;
 
         [MenuItem("Tools/Last Beacon/Exterior Art Pass (temporary)")]
         public static void Run()
@@ -60,6 +60,10 @@ namespace LastBeacon.Editor
             // Pulled down and given a little sheen so the tidal zone feels wet and
             // heavy. The cliffs are untouched; only the planks move.
             _dockPlank    = Mat("Art_Plank_Dock",     new Color(0.285f, 0.235f, 0.180f), 0.12f);
+            // The two dock aprons only. Darker than the inland path so the waterline
+            // settles into the tidal zone, but well short of Art_Wet_Dark in both
+            // value and sheen, and still legible as somewhere you walk.
+            _dockWet      = Mat("Art_Path_DockWet",   new Color(0.225f, 0.215f, 0.200f), 0.15f);
             AssetDatabase.SaveAssets();
         }
 
@@ -83,15 +87,21 @@ namespace LastBeacon.Editor
 
         static void AssignMaterials()
         {
-            int rock = 0, path = 0, wet = 0, moss = 0, dock = 0;
+            int rock = 0, path = 0, wet = 0, moss = 0, dock = 0, dockWet = 0;
 
             foreach (var r in Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
             {
                 string n = r.name;
                 Material pick = null;
 
+                // The dock aprons take the wet-path variant before the general
+                // walkable rule can claim them; every inland path is untouched.
+                if (n == "Dock_Apron" || n == "Dock_SupplyApron")
+                {
+                    pick = _dockWet; dockWet++;
+                }
                 // Walkable surfaces first, so a path never inherits the cliff colour.
-                if (n.StartsWith("Path_") || n.StartsWith("Stair_") || n.StartsWith("Shelf_") ||
+                else if (n.StartsWith("Path_") || n.StartsWith("Stair_") || n.StartsWith("Shelf_") ||
                     n == "MainYard" || n == "Terrace_Deck" || n == "Terrace_Throat" ||
                     n == "Ascent_Landing" || n == "Ascent_StairTopPad" ||
                     n == "Dock_Apron" || n == "Dock_SupplyApron" || n.StartsWith("Yard_Kerb") ||
@@ -128,7 +138,7 @@ namespace LastBeacon.Editor
                     r.sharedMaterial = pick;
             }
 
-            Debug.Log($"[Art] assigned — rock {rock}, path {path}, wet {wet}, moss {moss}, dock {dock}");
+            Debug.Log($"[Art] assigned — rock {rock}, path {path}, wet {wet}, moss {moss}, dock {dock}, dockApron {dockWet}");
 
             var terrain = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).FirstOrDefault();
             if (terrain != null)
