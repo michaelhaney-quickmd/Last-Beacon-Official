@@ -118,9 +118,14 @@ namespace LastBeacon.Tests
         [Test]
         public void AllGeometry_LivesUnderTheGeneratedRoot()
         {
+            // Art shells live under LB_ArtProto on purpose: they must survive a
+            // regenerate, and they replace only the LOOK of blockout masses whose
+            // colliders stay authoritative under the generated root.
             var root = Find(Gen.RootName).transform;
+            var artRoot = GameObject.Find("LB_ArtProto");
             var strays = Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None)
                 .Where(r => !r.transform.IsChildOf(root))
+                .Where(r => artRoot == null || !r.transform.IsChildOf(artRoot.transform))
                 .Select(r => r.name)
                 .ToArray();
 

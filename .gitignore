@@ -67,3 +67,23 @@ Desktop.ini
 
 # Scratch
 /scratch/
+
+# Offscreen review renders. These are throwaway verification shots written by the
+# editor tooling in Assets/_Project/Scripts/Editor (art-pass comparisons, collision
+# probes, material match sheets). They regenerate on demand and run to hundreds of
+# megabytes of PNG, so they stay out of LFS.
+/ArtPass_Review/
+/Cliff*_*/
+/CliffKit_Proof/
+/Compound_*/
+/GenShed_*/
+/Rock_Proto/
+/RockProto_Review/
+/TerraceEast_Review/
+/TripoShed_Inspection/
+
+# Unity crash dumps and the editor's auto-recovery scene copies
+mono_crash.*.json
+/[Aa]ssets/_Recovery/
+/[Aa]ssets/_Recovery.meta
+/Blender/renders*/

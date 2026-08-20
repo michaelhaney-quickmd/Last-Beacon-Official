@@ -686,9 +686,10 @@ namespace LastBeacon.Editor
                 new Vector3(0.2f, 2.8f, 0.2f), _wood);
             Prop("Shed_LeanToPost_E", shed, ShedC, ShedYaw, new Vector2(2.8f, 5.3f), TierCompound + 1.4f,
                 new Vector3(0.2f, 2.8f, 0.2f), _wood);
-            Prop("Shed_FuelDrum_A", shed, ShedC, ShedYaw, new Vector2(-1.6f, 4.7f), TierCompound + 0.45f,
+            // Drums follow the art shell's awning, which sits on the -Z gable.
+            Prop("Shed_FuelDrum_A", shed, ShedC, ShedYaw, new Vector2(-1.6f, -4.7f), TierCompound + 0.45f,
                 new Vector3(0.8f, 0.9f, 0.8f), _metal);
-            Prop("Shed_FuelDrum_B", shed, ShedC, ShedYaw, new Vector2(-0.6f, 4.7f), TierCompound + 0.45f,
+            Prop("Shed_FuelDrum_B", shed, ShedC, ShedYaw, new Vector2(-0.6f, -4.7f), TierCompound + 0.45f,
                 new Vector3(0.8f, 0.9f, 0.8f), _metal);
 
             // --- Workshop: set back north, angled, side entrance into a nook ------
@@ -1211,7 +1212,9 @@ namespace LastBeacon.Editor
             // Follow the doorways. These were left at the pre-mirror positions, so
             // every practical lamp was lighting the wrong side of the yard, and
             // Lamp_Stores was emitted twice at the same point.
-            WarmLamp(group, "Lamp_GeneratorShed", new Vector3(11.2f, TierCompound + 3.6f, 12.6f), 16f, 6f);
+            // Moved onto the art lamp fixture of SM_GeneratorShed (was 11.2 / +3.6 / 12.6,
+            // which sat 0.53 m off the modelled fixture).
+            WarmLamp(group, "Lamp_GeneratorShed", new Vector3(11.72f, TierCompound + 3.65f, 12.54f), 16f, 6f);
             WarmLamp(group, "Lamp_Workshop", new Vector3(13.6f, TierCompound + 3.6f, 21.9f), 16f, 6f);
             WarmLamp(group, "Lamp_KeepersHouse", new Vector3(-11.2f, TierCompound + 4.4f, 20.9f), 16f, 5.5f);
             WarmLamp(group, "Lamp_Stores", new Vector3(-11.9f, TierCompound + 3.6f, 8.3f), 16f, 5.5f);

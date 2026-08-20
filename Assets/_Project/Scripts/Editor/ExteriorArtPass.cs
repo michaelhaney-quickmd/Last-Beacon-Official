@@ -198,16 +198,56 @@ namespace LastBeacon.Editor
 
         static void SetAtmosphere()
         {
+            // Ambient pulled DOWN and the key pushed UP. High ambient plus a weak
+            // directional is what flattens faceted rock: every plane receives the
+            // same light regardless of which way it points, so the facets vanish.
+            // The reference sheet is key-dominant, and that is what separates its
+            // planes into distinct values.
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.105f, 0.130f, 0.180f);
-            RenderSettings.ambientEquatorColor = new Color(0.070f, 0.085f, 0.115f);
-            RenderSettings.ambientGroundColor = new Color(0.035f, 0.042f, 0.055f);
+            RenderSettings.ambientSkyColor = new Color(0.055f, 0.070f, 0.100f);
+            RenderSettings.ambientEquatorColor = new Color(0.038f, 0.048f, 0.066f);
+            RenderSettings.ambientGroundColor = new Color(0.020f, 0.025f, 0.034f);
             RenderSettings.skybox = null;
 
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(0.075f, 0.095f, 0.130f);
             RenderSettings.fogDensity = 0.0065f;
+
+            // --- key light: rake the west-facing cliffs -------------------------
+            // The terrace east wall faces WEST, so the key has to travel eastward
+            // to strike it. Elevated ~30 degrees and swung slightly south so
+            // south-west facets read brighter than north-west ones.
+            var moon = Object.FindObjectsByType<Light>(FindObjectsSortMode.None)
+                .FirstOrDefault(l => l.name == "Moonlight");
+            if (moon != null)
+            {
+                moon.transform.rotation = Quaternion.Euler(30f, 105f, 0f);
+                moon.intensity = 1.15f;
+                moon.color = new Color(0.62f, 0.72f, 0.92f);
+                moon.shadows = LightShadows.Soft;
+                moon.shadowStrength = 0.85f;
+                Debug.Log($"[Art] key raked to {moon.transform.rotation.eulerAngles}, intensity {moon.intensity}");
+            }
+
+            // A weak opposing fill so unlit planes read as dark rock rather than
+            // pure black. Deliberately a third of the key.
+            var fillGo = GameObject.Find("Fill_Cold");
+            if (fillGo == null)
+            {
+                fillGo = new GameObject("Fill_Cold");
+                if (moon != null) fillGo.transform.SetParent(moon.transform.parent, false);
+            }
+            // Not ??: GetComponent returns a fake-null Unity object that ?? reads as
+            // non-null, so AddComponent never ran and the next line threw. Only
+            // Unity's overloaded == recognises the fake null.
+            var fillLight = fillGo.GetComponent<Light>();
+            if (fillLight == null) fillLight = fillGo.AddComponent<Light>();
+            fillLight.type = LightType.Directional;
+            fillLight.transform.rotation = Quaternion.Euler(18f, 292f, 0f);
+            fillLight.color = new Color(0.42f, 0.52f, 0.72f);
+            fillLight.intensity = 0.38f;
+            fillLight.shadows = LightShadows.None;
 
             // Warm practicals on colour temperature rather than a hand-picked tint.
             int lamps = 0;
@@ -234,11 +274,13 @@ namespace LastBeacon.Editor
 
                 // A visible shaft: URP has no volumetrics, so the beam gets a thin
                 // unlit cone. No collider, and it is not gameplay geometry.
-                var existing = GameObject.Find("ArtPass_BeaconBeamCone");
+                var existing = GameObject.Find("Lighthouse_BeamShaft");
                 if (existing != null) Object.DestroyImmediate(existing);
 
                 var cone = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                cone.name = "ArtPass_BeaconBeamCone";
+                // Named as lighthouse apparatus: it is the beam, not a structure that
+                // competes with the tower for height.
+                cone.name = "Lighthouse_BeamShaft";
                 Object.DestroyImmediate(cone.GetComponent<Collider>());
                 cone.transform.SetParent(beam.transform, false);
                 cone.transform.localPosition = new Vector3(0f, 0f, 55f);
