@@ -670,9 +670,14 @@ namespace LastBeacon.Editor
             Shell("Shed_Body", shed, ShedC, new Vector2(10f, 8f), 4.2f, ShedYaw, Doorways[0], _concrete);
             Roof("Shed_Roof", shed, ShedC, new Vector2(10.6f, 8.6f), 4.2f, 1f, _metal, ShedYaw);
             DoorLeaves(shed, Doorways[0], _metal, true);
+            // Yawed 90 degrees from the original footprint so the 3.2 m face fronts
+            // the doorway rather than the 2.0 m end. The doorway is on local -X, so
+            // the long axis belongs on Z. Centre is unchanged.
             Prop("Generator_Body", shed, ShedC, ShedYaw, new Vector2(0.5f, 0f), TierCompound + 0.9f,
-                new Vector3(3.2f, 1.8f, 2f), _metal);
-            Prop("Generator_FuelCap", shed, ShedC, ShedYaw, new Vector2(1.7f, 0f), TierCompound + 1.95f,
+                new Vector3(2f, 1.8f, 3.2f), _metal);
+            // The cap follows the body: at the old 1.7 it would hang off the turned
+            // deck, so it keeps its end and its 0.05 m inset from that end.
+            Prop("Generator_FuelCap", shed, ShedC, ShedYaw, new Vector2(1.1f, 0f), TierCompound + 1.95f,
                 new Vector3(0.7f, 0.3f, 0.7f), _plank);
             Prop("Generator_Breaker", shed, ShedC, ShedYaw, new Vector2(3.5f, -2.5f), TierCompound + 1.5f,
                 new Vector3(0.9f, 1.4f, 0.35f), _metal);
@@ -1035,11 +1040,19 @@ namespace LastBeacon.Editor
             const BlockoutMarker.MarkerKind defense = BlockoutMarker.MarkerKind.DefenseSocket;
             const BlockoutMarker.MarkerKind control = BlockoutMarker.MarkerKind.SystemControl;
 
-            Marker(parent, "Generator_FuelPoint", At(ShedC, ShedYaw, new Vector2(1.7f, 0f), TierCompound + 2.1f), task,
+            // The fuel point tracks the cap, which moved with the generator's approved
+            // 90-degree yaw.
+            Marker(parent, "Generator_FuelPoint", At(ShedC, ShedYaw, new Vector2(1.1f, 0f), TierCompound + 2.1f), task,
                 "Pour fuel can here.");
+            // The start point gains from the turn: it used to sit 0.1 m inside the old
+            // footprint and is now 0.5 m clear of the door-facing side.
             Marker(parent, "Generator_StartPoint", At(ShedC, ShedYaw, new Vector2(-1f, 0.9f), TierCompound + 1.4f), task,
                 "Prime and start.");
-            Marker(parent, "Generator_RepairPoint", At(ShedC, ShedYaw, new Vector2(0.5f, -1.5f), TierCompound + 1.0f), task,
+            // CANONICAL at -2.2. The yawed generator body spans local z -1.6..1.6, so
+            // the original -1.5 fell 0.1 m INSIDE the machine. This stands 0.600 m off
+            // the -Z service face: inside the 0.5-0.7 m working band, and it leaves
+            // 0.250 m between the player capsule (0.35 m radius) and the generator.
+            Marker(parent, "Generator_RepairPoint", At(ShedC, ShedYaw, new Vector2(0.5f, -2.2f), TierCompound + 1.0f), task,
                 "Damage repair panel.");
             Marker(parent, "Workshop_Bench", At(WorkC, WorkYaw, new Vector2(-6.6f, -1.2f), TierCompound + 1.1f), task,
                 "Trap repair, ammo crafting (GDD 24).");

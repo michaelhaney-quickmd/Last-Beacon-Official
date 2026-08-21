@@ -773,6 +773,42 @@ namespace LastBeacon.Tests
         }
 
         [Test]
+        public void GeneratorInteractionMarkers_StandOutsideTheMachineAndWithinReach()
+        {
+            // Regression guard. Yawing the generator 90 degrees widened its footprint
+            // across Z and swallowed Generator_RepairPoint, which had been authored
+            // against the old footprint. Nothing caught it, because the marker tests
+            // only asserted that the names existed. These assert the geometry.
+            var body = BoundsOf("Generator_Body");
+            const float CapsuleRadius = 0.35f;
+            const float MaxReach = 1.2f;
+
+            foreach (var name in new[] { "Generator_StartPoint", "Generator_RepairPoint" })
+            {
+                var p = Find(name).transform.position;
+
+                // Plan distance to the machine: negative would mean standing in it.
+                float dx = Mathf.Max(body.min.x - p.x, p.x - body.max.x);
+                float dz = Mathf.Max(body.min.z - p.z, p.z - body.max.z);
+                float gap = Mathf.Max(dx, dz);
+
+                Assert.Greater(gap, CapsuleRadius,
+                    $"{name} is {gap:0.000} m from the generator in plan — the player " +
+                    $"capsule ({CapsuleRadius:0.00} m radius) cannot stand there.");
+                Assert.Less(gap, MaxReach,
+                    $"{name} is {gap:0.000} m from the generator — too far to be a " +
+                    "service position for it.");
+            }
+
+            // The fuel point is top access, so it sits over the deck rather than clear
+            // of it in plan. What matters is that it is above the machine, not inside.
+            var fuel = Find("Generator_FuelPoint").transform.position;
+            Assert.Greater(fuel.y, body.max.y,
+                $"Generator_FuelPoint sits at y {fuel.y:0.000}, inside a generator that " +
+                $"tops out at {body.max.y:0.000}.");
+        }
+
+        [Test]
         public void CompoundEntrance_IsClearOfEveryBuilding()
         {
             var entrance = Gen.WpCompoundEntrance;
