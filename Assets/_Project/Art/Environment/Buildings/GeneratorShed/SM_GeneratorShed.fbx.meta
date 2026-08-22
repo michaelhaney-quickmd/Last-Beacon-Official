@@ -3,7 +3,57 @@ guid: 43650b8de3f174046a6a596c56cecb96
 ModelImporter:
   serializedVersion: 24501
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Concrete
+    second: {fileID: 2100000, guid: 438143717f4a9488f97fca9feb47954e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Concrete_Interior
+    second: {fileID: 2100000, guid: d8d284f4e60b34347a8993291022771d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Concrete_Plinth
+    second: {fileID: 2100000, guid: 6c6f9562476e44dc8b3582d20d87fe39, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Emissive_Warm
+    second: {fileID: 2100000, guid: 62d910576f185482b8957df72a208a0a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Metal
+    second: {fileID: 2100000, guid: fc024213d318c42469ed851830790e72, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Metal_Canopy
+    second: {fileID: 2100000, guid: 6f2eb5935450c4459a83e7028045b28a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Metal_Painted
+    second: {fileID: 2100000, guid: dd7e40257191749469baae7358ae02b6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_Metal_Roof
+    second: {fileID: 2100000, guid: 4f1d85714f0f04072a814ff65b6a5280, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_ShedExt_AwningUnderside
+    second: {fileID: 2100000, guid: 83f7dbbe9aae042f2b1b2b06778dbf38, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MAT_ShedInt_RoofUnderside
+    second: {fileID: 2100000, guid: b2cbee67d0f3e4a909a28bf7906ba452, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

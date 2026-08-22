@@ -1260,7 +1260,14 @@ namespace LastBeacon.Editor
             light.color = new Color(1f, 0.78f, 0.48f);
             light.range = range;
             light.intensity = intensity;
-            light.shadows = LightShadows.None;
+            // Soft, not None. With shadows off these practicals shine straight THROUGH
+            // the roof fascia and beams, painting a hard-edged warm patch on surfaces
+            // that should be occluded -- which reads exactly like a duplicate mesh
+            // underneath, but is purely a lighting-rig setting.
+            light.shadows = LightShadows.Soft;
+            light.shadowStrength = 0.85f;
+            light.shadowBias = 0.03f;
+            light.shadowNormalBias = 0.25f;
         }
 
         // ------------------------------------------------------------------ player
